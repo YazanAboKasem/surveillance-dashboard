@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en" dir="ltr">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,9 @@
     {{-- Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
 
     {{-- Bootstrap Icons --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -21,62 +24,64 @@
 
     @stack('styles')
 </head>
+
 <body>
 
-<div class="sv-layout">
+    <div class="sv-layout">
 
-    {{-- ── Top Bar ────────────────────────────────────────────── --}}
-    <header class="sv-topbar">
-        <div class="sv-topbar-brand">
-            <div class="sv-topbar-icon">
-                <i class="bi bi-shield-check" style="color:#fff"></i>
+        {{-- ── Top Bar ────────────────────────────────────────────── --}}
+        <header class="sv-topbar">
+            <div class="sv-topbar-brand">
+                <div class="sv-topbar-icon">
+                    <i class="bi bi-shield-check" style="color:#fff"></i>
+                </div>
+                <div>
+                    <div class="sv-topbar-title">RoadShieldd</div>
+                    <div class="sv-topbar-subtitle">Smart Surveillance</div>
+                </div>
             </div>
-            <div>
-                <div class="sv-topbar-title">RoadShield</div>
-                <div class="sv-topbar-subtitle">Smart Surveillance</div>
+
+            <div class="sv-topbar-center" id="sv-status-bar">
+                <div class="sv-status-pill">
+                    <span class="sv-status-dot"></span>
+                    SYSTEM ONLINE
+                </div>
             </div>
-        </div>
 
-        <div class="sv-topbar-center" id="sv-status-bar">
-            <div class="sv-status-pill">
-                <span class="sv-status-dot"></span>
-                SYSTEM ONLINE
+            <div class="sv-topbar-right">
+                <span class="sv-clock" id="sv-clock"></span>
             </div>
-        </div>
+        </header>
 
-        <div class="sv-topbar-right">
-            <span class="sv-clock" id="sv-clock"></span>
-        </div>
-    </header>
+        {{-- ── Main Content ─────────────────────────────────────── --}}
+        <main class="sv-main">
+            @yield('content')
+        </main>
 
-    {{-- ── Main Content ─────────────────────────────────────── --}}
-    <main class="sv-main">
-        @yield('content')
-    </main>
+        {{-- ── Sidebar ──────────────────────────────────────────── --}}
+        <aside class="sv-sidebar">
+            @yield('sidebar')
+        </aside>
 
-    {{-- ── Sidebar ──────────────────────────────────────────── --}}
-    <aside class="sv-sidebar">
-        @yield('sidebar')
-    </aside>
+    </div>
 
-</div>
+    {{-- Live clock script --}}
+    <script>
+        (function () {
+            function tick() {
+                const el = document.getElementById('sv-clock');
+                if (!el) return;
+                const n = new Date();
+                el.textContent = n.toLocaleTimeString('en-US', { hour12: false }) +
+                    ' · ' + n.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            }
+            tick();
+            setInterval(tick, 1000);
+        })();
+    </script>
 
-{{-- Live clock script --}}
-<script>
-    (function () {
-        function tick() {
-            const el = document.getElementById('sv-clock');
-            if (!el) return;
-            const n = new Date();
-            el.textContent = n.toLocaleTimeString('en-US', { hour12: false }) +
-                ' · ' + n.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        }
-        tick();
-        setInterval(tick, 1000);
-    })();
-</script>
-
-@stack('scripts')
+    @stack('scripts')
 
 </body>
+
 </html>
