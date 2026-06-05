@@ -153,6 +153,9 @@ class CameraController extends Controller
      * POST /api/surveillance/cameras/{id}/settings
      *
      * Update camera settings (quality & fps) from browser.
+     * Stores full resolution/bitrate info so camera-control.py can
+     * restart FFmpeg with exact parameters — no client-side transcoding.
+     *
      * Body: { "quality": "hd|sd|ultra", "fps": 1|5|10|15|30 }
      */
     public function updateSettings(Request $request, string $cameraId): JsonResponse
@@ -177,20 +180,37 @@ class CameraController extends Controller
             return response()->json(['error' => "Camera {$cameraId} not found"], 404);
         }
 
+        // ── Resolve quality preset to full FFmpeg parameters ─────────────
+        $presets = [
+            'hd'    => ['width' => 1920, 'height' => 1080, 'bitrate' => '4000k', 'bufsize' => '8000k'],
+            'sd'    => ['width' => 1280, 'height' =>  720, 'bitrate' => '1000k', 'bufsize' => '2000k'],
+            'ultra' => ['width' =>  640, 'height' =>  360, 'bitrate' =>  '150k', 'bufsize' =>  '300k'],
+        ];
+        $preset = $presets[$quality] ?? $presets['hd'];
+
+        // Override FPS with user selection (not preset default)
         $settings = [
             'quality'    => $quality,
             'fps'        => $fps,
+            'width'      => $preset['width'],
+            'height'     => $preset['height'],
+            'bitrate'    => $preset['bitrate'],
+            'bufsize'    => $preset['bufsize'],
+            'preset'     => $quality,
+            'camera_id'  => $cameraId,
             'updated_at' => now()->toISOString(),
         ];
 
-        Cache::put("camera_settings_{$cameraId}", $settings, self::STATUS_TTL);
+        // Write to both cache keys for compatibility with all polling endpoints (cached for 24h)
+        Cache::put("camera_settings_{$cameraId}", $settings, 86400);
+        Cache::put("stream_quality_{$cameraId}",  $settings, 86400);
 
         \Log::info('[Surveillance] Settings updated', array_merge(['camera_id' => $cameraId], $settings));
 
         return response()->json([
             'success'  => true,
             'settings' => $settings,
-            'message'  => 'Camera settings updated successfully.',
+            'message'  => "Camera settings queued. Python will apply: {$preset['width']}x{$preset['height']} @{$fps}fps {$preset['bitrate']}.",
         ]);
     }
 

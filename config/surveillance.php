@@ -15,7 +15,7 @@ return [
      * Asset version — bump this to bust browser cache on all devices.
      * Format: MAJOR.MINOR (e.g. 3.2 after any JS/CSS change)
      */
-    'asset_version' => '3.2',
+    'asset_version' => '3.3',
 
     /*
     |--------------------------------------------------------------------------

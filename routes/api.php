@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CameraController;
+use App\Http\Controllers\StreamQualityController;
 use App\Http\Controllers\TunnelController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,4 +30,10 @@ Route::get('/surveillance/cameras/{id}/status',     [CameraController::class, 's
 // ── Camera Dynamic Settings ───────────────────────────────────────────────────
 Route::post('/surveillance/cameras/{id}/settings',   [CameraController::class, 'updateSettings']);
 Route::get('/surveillance/cameras/settings',        [CameraController::class, 'getAllSettings']);
+
+// ── Stream Quality Control (Python FFmpeg Transcoding) ────────────────────────
+// Browser sets quality preset → cached → camera-control.py polls & restarts FFmpeg
+Route::post('/surveillance/cameras/{id}/quality',           [StreamQualityController::class, 'setQuality']);
+Route::get('/surveillance/cameras/{id}/quality/settings',   [StreamQualityController::class, 'getSettings']);
+Route::get('/surveillance/quality/presets',                  [StreamQualityController::class, 'presets']);
 

@@ -53,10 +53,13 @@ class StreamQualityController extends Controller
             ];
         }
 
+        $settings['quality']    = $settings['preset'];
         $settings['updated_at'] = now()->toISOString();
         $settings['camera_id']  = $cameraId;
 
-        Cache::put("stream_quality_{$cameraId}", $settings, self::CACHE_TTL);
+        // Write to both keys to keep settings unified
+        Cache::put("stream_quality_{$cameraId}",  $settings, self::CACHE_TTL);
+        Cache::put("camera_settings_{$cameraId}", $settings, self::CACHE_TTL);
 
         \Log::info("[StreamQuality] {$cameraId}: preset={$settings['preset']} "
             . "{$settings['width']}x{$settings['height']} "

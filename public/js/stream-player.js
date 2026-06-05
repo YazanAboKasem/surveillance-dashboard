@@ -317,13 +317,26 @@
         })
         .then(data => {
             if (data.success) {
-                console.log(`[StreamPlayer] Server received settings for ${camId}. Reloading stream in 2.5s...`);
+                console.log(`[StreamPlayer] Server received settings for ${camId}. Reloading stream in 6s...`);
+                
+                let remaining = 6;
+                showOverlay(card, `Restarting transcoder… (${remaining}s)`);
+                const countdown = setInterval(() => {
+                    remaining--;
+                    if (remaining > 0) {
+                        showOverlay(card, `Restarting transcoder… (${remaining}s)`);
+                    } else {
+                        clearInterval(countdown);
+                    }
+                }, 1000);
+
                 // Wait for local FFmpeg to restart and feed MediaMTX
                 setTimeout(() => {
+                    clearInterval(countdown);
                     const url = video.dataset.hlsUrlLive || video.dataset.hlsUrl;
                     const urlWithBuster = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
                     startHLS(video, urlWithBuster, card, camId, 0, 0);
-                }, 2500);
+                }, 6000);
             } else {
                 console.warn('[StreamPlayer] Failed to apply settings:', data);
                 showOverlay(card, '⚠️ Settings error — check token', 'error');
