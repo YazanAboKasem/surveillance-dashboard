@@ -36,7 +36,7 @@
                     <i class="bi bi-shield-check" style="color:#fff"></i>
                 </div>
                 <div>
-                    <div class="sv-topbar-title">RoadShieldd</div>
+                    <div class="sv-topbar-title">RoadShield</div>
                     <div class="sv-topbar-subtitle">Smart Surveillance</div>
                 </div>
             </div>
