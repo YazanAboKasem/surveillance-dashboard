@@ -94,6 +94,7 @@ class TunnelController extends Controller
             'hls_url'    => $url,
             'cam1_stream' => $url ? "{$url}/cam1/index.m3u8" : null,
             'cam2_stream' => $url ? "{$url}/cam2/index.m3u8" : null,
+            'cam3_stream' => $url ? "{$url}/cam3/index.m3u8" : null,
         ]);
     }
 

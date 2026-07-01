@@ -90,6 +90,18 @@ return [
             'enabled'  => true,
             'ptz'      => true,
         ],
+
+        [
+            'id'       => 'cam3',
+            'label'    => 'Camera 3 — Back View',
+            'path'     => 'cam3',
+            'path_sub'   => 'cam3_sub',
+            'path_ultra' => 'cam3_ultra',
+            'path_live'  => 'cam3_live',
+            'ip'       => '192.168.1.67',
+            'enabled'  => true,
+            'ptz'      => true,
+        ],
     ],
 
 ];

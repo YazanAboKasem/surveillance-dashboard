@@ -23,11 +23,8 @@ class SurveillanceController extends Controller
         $server = config('surveillance.media_server');
 
         // ── Resolve HLS base URL ─────────────────────────────────────────────
-        // Priority:
-        //   1. Cache (registered live by connect-to-server.sh via API) ← automatic
-        //   2. MEDIA_SERVER_HLS_URL in .env                            ← manual fallback
-        //   3. http://MEDIA_SERVER_HOST:port                           ← local dev
-        $cachedUrl  = Cache::get(TunnelController::CACHE_KEY);
+        //   4. Force local fallback if '?local' query parameter is present in URL
+        $cachedUrl  = request()->has('local') ? null : Cache::get(TunnelController::CACHE_KEY);
 
         $hlsBase    = self::resolveBaseUrl(
             fullUrl: $cachedUrl ?? $server['hls_base_url'] ?? null,
