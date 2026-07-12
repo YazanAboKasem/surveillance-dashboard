@@ -41,6 +41,23 @@ class JetsonWebSocketService
     }
 
     /**
+     * Mark Jetson as online (called from HTTP requests).
+     */
+    public function markOnline(\Illuminate\Http\Request $request): void
+    {
+        Cache::put('jetson_ws_online', true, 15); // short TTL for polling fallback
+        Cache::put('jetson_ws_last_heartbeat', now()->timestamp, 15);
+
+        if ($request->hasHeader('X-Cameras')) {
+            $cameras = explode(',', $request->header('X-Cameras'));
+            Cache::put('jetson_ws_cameras', $cameras, 86400);
+        }
+        if ($request->hasHeader('X-Version')) {
+            Cache::put('jetson_ws_version', $request->header('X-Version'), 86400);
+        }
+    }
+
+    /**
      * Send PTZ command via WS.
      */
     public function sendPtzCommand(string $cameraId, string $commandId, string $action, int $speed): void

@@ -21,16 +21,23 @@ use Illuminate\Support\Facades\Cache;
  */
 class CameraController extends Controller
 {
-    const TOKEN_CACHE_KEY   = 'surveillance_tunnel_hls_url'; // reuse TunnelController constant
-    const CMD_QUEUE_TTL     = 60 * 5;  // 5 minutes
-    const STATUS_TTL        = 60 * 60; // 1 hour
+    const TOKEN_CACHE_KEY = 'surveillance_tunnel_hls_url'; // reuse TunnelController constant
+    const CMD_QUEUE_TTL = 60 * 5;  // 5 minutes
+    const STATUS_TTL = 60 * 60; // 1 hour
 
     // ── PTZ Actions ──────────────────────────────────────────────────────────
     const VALID_ACTIONS = [
-        'zoom_in', 'zoom_out', 'zoom_stop',
-        'pan_left', 'pan_right', 'pan_stop',
-        'tilt_up', 'tilt_down', 'tilt_stop',
-        'home', 'stop',
+        'zoom_in',
+        'zoom_out',
+        'zoom_stop',
+        'pan_left',
+        'pan_right',
+        'pan_stop',
+        'tilt_up',
+        'tilt_down',
+        'tilt_stop',
+        'home',
+        'stop',
     ];
 
     /**
@@ -41,37 +48,37 @@ class CameraController extends Controller
      */
     public function ptzCommand(Request $request, string $cameraId): JsonResponse
     {
-        if (! $this->isAuthorized($request)) {
+        if (!$this->isAuthorized($request)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $action   = $request->input('action', 'stop');
-        $speed    = (int) $request->input('speed', 3);   // 1-7
+        $action = $request->input('action', 'stop');
+        $speed = (int) $request->input('speed', 3);   // 1-7
         $duration = (int) $request->input('duration', 0); // ms, 0=continuous
 
-        if (! in_array($action, self::VALID_ACTIONS)) {
+        if (!in_array($action, self::VALID_ACTIONS)) {
             return response()->json(['error' => "Invalid action: {$action}"], 422);
         }
 
         $camera = $this->findCamera($cameraId);
-        if (! $camera) {
+        if (!$camera) {
             return response()->json(['error' => "Camera {$cameraId} not found"], 404);
         }
 
         $command = [
-            'id'        => uniqid('ptz_'),
+            'id' => uniqid('ptz_'),
             'camera_id' => $cameraId,
             'camera_ip' => $camera['ip'] ?? null,
-            'action'    => $action,
-            'speed'     => max(1, min(7, $speed)),
-            'duration'  => $duration,
+            'action' => $action,
+            'speed' => max(1, min(7, $speed)),
+            'duration' => $duration,
             'queued_at' => now()->toISOString(),
         ];
 
         // Push to camera-specific queue
         $queueKey = "ptz_queue_{$cameraId}";
-        $queue    = Cache::get($queueKey, []);
-        $queue[]  = $command;
+        $queue = Cache::get($queueKey, []);
+        $queue[] = $command;
         Cache::put($queueKey, $queue, self::CMD_QUEUE_TTL);
 
         \Log::info('[PTZ] Command queued', $command);
@@ -100,18 +107,18 @@ class CameraController extends Controller
      */
     public function ptzPoll(Request $request, string $cameraId): JsonResponse
     {
-        if (! $this->isAuthorized($request)) {
+        if (!$this->isAuthorized($request)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $queueKey = "ptz_queue_{$cameraId}";
-        $queue    = Cache::get($queueKey, []);
+        $queue = Cache::get($queueKey, []);
         Cache::forget($queueKey);
 
         return response()->json([
             'camera_id' => $cameraId,
-            'commands'  => $queue,
-            'count'     => count($queue),
+            'commands' => $queue,
+            'count' => count($queue),
         ]);
     }
 
@@ -123,15 +130,15 @@ class CameraController extends Controller
      */
     public function ptzAck(Request $request, string $cameraId): JsonResponse
     {
-        if (! $this->isAuthorized($request)) {
+        if (!$this->isAuthorized($request)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $statusKey = "ptz_status_{$cameraId}";
-        $status    = [
+        $status = [
             'command_id' => $request->input('command_id'),
-            'success'    => $request->boolean('success'),
-            'error'      => $request->input('error'),
+            'success' => $request->boolean('success'),
+            'error' => $request->input('error'),
             'executed_at' => now()->toISOString(),
         ];
 
@@ -149,11 +156,11 @@ class CameraController extends Controller
     public function status(string $cameraId): JsonResponse
     {
         $ptzStatus = Cache::get("ptz_status_{$cameraId}");
-        $camera    = $this->findCamera($cameraId);
+        $camera = $this->findCamera($cameraId);
 
         return response()->json([
-            'camera_id'  => $cameraId,
-            'camera'     => $camera ? ['label' => $camera['label'], 'ip' => $camera['ip'] ?? null] : null,
+            'camera_id' => $cameraId,
+            'camera' => $camera ? ['label' => $camera['label'], 'ip' => $camera['ip'] ?? null] : null,
             'ptz_status' => $ptzStatus,
         ]);
     }
@@ -169,50 +176,50 @@ class CameraController extends Controller
      */
     public function updateSettings(Request $request, string $cameraId): JsonResponse
     {
-        if (! $this->isAuthorized($request)) {
+        if (!$this->isAuthorized($request)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $quality = $request->input('quality', 'hd');
-        $fps     = (int) $request->input('fps', 15);
+        $fps = (int) $request->input('fps', 15);
 
-        if (! in_array($quality, ['hd', 'sd', 'ultra'])) {
+        if (!in_array($quality, ['hd', 'sd', 'ultra'])) {
             return response()->json(['error' => "Invalid quality: {$quality}"], 422);
         }
 
-        if (! in_array($fps, [1, 5, 10, 15, 30])) {
+        if (!in_array($fps, [1, 5, 10, 15, 30])) {
             return response()->json(['error' => "Invalid fps: {$fps}"], 422);
         }
 
         $camera = $this->findCamera($cameraId);
-        if (! $camera) {
+        if (!$camera) {
             return response()->json(['error' => "Camera {$cameraId} not found"], 404);
         }
 
         // ── Resolve quality preset to full FFmpeg parameters ─────────────
         $presets = [
-            'hd'    => ['width' => 1920, 'height' => 1080, 'bitrate' => '4000k', 'bufsize' => '8000k'],
-            'sd'    => ['width' => 1280, 'height' =>  720, 'bitrate' => '1000k', 'bufsize' => '2000k'],
-            'ultra' => ['width' =>  640, 'height' =>  360, 'bitrate' =>  '150k', 'bufsize' =>  '300k'],
+            'hd' => ['width' => 1920, 'height' => 1080, 'bitrate' => '4000k', 'bufsize' => '8000k'],
+            'sd' => ['width' => 1280, 'height' => 720, 'bitrate' => '1000k', 'bufsize' => '2000k'],
+            'ultra' => ['width' => 640, 'height' => 360, 'bitrate' => '150k', 'bufsize' => '300k'],
         ];
         $preset = $presets[$quality] ?? $presets['hd'];
 
         // Override FPS with user selection (not preset default)
         $settings = [
-            'quality'    => $quality,
-            'fps'        => $fps,
-            'width'      => $preset['width'],
-            'height'     => $preset['height'],
-            'bitrate'    => $preset['bitrate'],
-            'bufsize'    => $preset['bufsize'],
-            'preset'     => $quality,
-            'camera_id'  => $cameraId,
+            'quality' => $quality,
+            'fps' => $fps,
+            'width' => $preset['width'],
+            'height' => $preset['height'],
+            'bitrate' => $preset['bitrate'],
+            'bufsize' => $preset['bufsize'],
+            'preset' => $quality,
+            'camera_id' => $cameraId,
             'updated_at' => now()->toISOString(),
         ];
 
         // Write to both cache keys for compatibility with all polling endpoints (cached for 24h)
         Cache::put("camera_settings_{$cameraId}", $settings, 86400);
-        Cache::put("stream_quality_{$cameraId}",  $settings, 86400);
+        Cache::put("stream_quality_{$cameraId}", $settings, 86400);
 
         \Log::info('[Surveillance] Settings updated', array_merge(['camera_id' => $cameraId], $settings));
 
@@ -221,14 +228,14 @@ class CameraController extends Controller
             $camerasConfig = config('surveillance.cameras', []);
             $allSettings = [];
             foreach ($camerasConfig as $cam) {
-                if (! ($cam['enabled'] ?? false)) {
+                if (!($cam['enabled'] ?? false)) {
                     continue;
                 }
                 $id = $cam['id'];
                 $camSettings = ($id === $cameraId) ? $settings : Cache::get("camera_settings_{$id}");
                 $allSettings[$id] = [
                     'quality' => $camSettings['quality'] ?? 'hd',
-                    'fps'     => (int) ($camSettings['fps'] ?? 15),
+                    'fps' => (int) ($camSettings['fps'] ?? 15),
                 ];
             }
 
@@ -240,9 +247,9 @@ class CameraController extends Controller
         }
 
         return response()->json([
-            'success'  => true,
+            'success' => true,
             'settings' => $settings,
-            'message'  => "Camera settings queued and pushed via WebSocket.",
+            'message' => "Camera settings queued and pushed via WebSocket.",
         ]);
     }
 
@@ -253,7 +260,7 @@ class CameraController extends Controller
      */
     public function getAllSettings(Request $request): JsonResponse
     {
-        if (! $this->isAuthorized($request)) {
+        if (!$this->isAuthorized($request)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -261,17 +268,17 @@ class CameraController extends Controller
         $allSettings = [];
 
         foreach ($cameras as $cam) {
-            if (! ($cam['enabled'] ?? false)) {
+            if (!($cam['enabled'] ?? false)) {
                 continue;
             }
             $id = $cam['id'];
             $settings = Cache::get("camera_settings_{$id}");
 
-            if (! $settings) {
+            if (!$settings) {
                 // Return default settings
                 $settings = [
                     'quality' => 'hd',
-                    'fps'     => 15,
+                    'fps' => 15,
                 ];
             }
 
@@ -287,9 +294,14 @@ class CameraController extends Controller
 
     private function isAuthorized(Request $request): bool
     {
-        $token  = config('surveillance.api_token');
-        if (empty($token)) return false;
-        return $request->header('Authorization', '') === "Bearer {$token}";
+        $token = config('surveillance.api_token');
+        if (empty($token))
+            return false;
+        $authorized = $request->header('Authorization', '') === "Bearer {$token}";
+        if ($authorized) {
+            app(\App\Services\JetsonWebSocketService::class)->markOnline($request);
+        }
+        return $authorized;
     }
 
     private function findCamera(string $id): ?array
