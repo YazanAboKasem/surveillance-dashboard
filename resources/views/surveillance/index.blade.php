@@ -79,10 +79,29 @@
 {{-- ── Main Content ──────────────────────────────────────────────── --}}
 @section('content')
 
-    <div class="sv-section-header">
-        <h1 class="sv-section-title">Live Cameras</h1>
-        <span class="sv-section-count">{{ $cameras->count() }} online</span>
+    <div class="sv-section-header" style="display:flex;align-items:center;margin-bottom:24px">
+        <div>
+            <h1 class="sv-section-title">Live Cameras</h1>
+            <span class="sv-section-count">{{ $cameras->count() }} online</span>
+        </div>
+        <div style="display:flex;gap:12px;margin-left:auto">
+            <button class="sv-btn sv-btn-secondary" id="sync-recordings-btn" onclick="openSyncModal()" style="display:inline-flex;align-items:center;gap:8px">
+                <i class="bi bi-hdd-network-fill"></i> Sync Recordings
+            </button>
+            <button class="sv-btn sv-btn-secondary" id="test-mode-toggle-btn" onclick="toggleTestMode()" style="display:inline-flex;align-items:center;gap:8px">
+                <i class="bi bi-cpu-fill"></i> Test Mode
+            </button>
+        </div>
     </div>
+
+    <!-- Diagnostics Panel (Test Mode) -->
+    <x-diagnostic />
+
+    <!-- QNAP Sync Progress Panel -->
+    <x-sync-progress />
+
+    <!-- QNAP Sync Modal -->
+    <x-qnap-sync-modal />
 
     {{--
         Camera grid — loop driven by config/surveillance.php.
@@ -107,4 +126,6 @@
 
     {{-- Stream player v3 — versioned to bust cache --}}
     <script src="{{ asset('js/stream-player.js') }}?v={{ config('surveillance.asset_version', '1') }}"></script>
+    <script src="{{ asset('js/diagnostic.js') }}?v={{ config('surveillance.asset_version', '1') }}"></script>
+    <script src="{{ asset('js/qnap-sync.js') }}?v={{ config('surveillance.asset_version', '1') }}"></script>
 @endpush

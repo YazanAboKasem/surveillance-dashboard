@@ -3,6 +3,9 @@
 use App\Http\Controllers\CameraController;
 use App\Http\Controllers\StreamQualityController;
 use App\Http\Controllers\TunnelController;
+use App\Http\Controllers\DiagnosticController;
+use App\Http\Controllers\QnapSyncController;
+use App\Http\Controllers\JetsonStatusController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,12 +16,15 @@ use Illuminate\Support\Facades\Route;
 | These routes are called by connect-to-server.sh and camera-control.py.
 | Authentication: Bearer token from SURVEILLANCE_TOKEN in .env
 |
-*/
+|*/
 
 // ── Tunnel URL Registration ───────────────────────────────────────────────────
 Route::post('/surveillance/register-tunnel',   [TunnelController::class, 'register']);
 Route::delete('/surveillance/register-tunnel', [TunnelController::class, 'clear']);
 Route::get('/surveillance/tunnel-status',      [TunnelController::class, 'status']);
+
+// ── Jetson Status & WebSocket ──────────────────────────────────────────────────
+Route::get('/surveillance/jetson/status', [JetsonStatusController::class, 'status']);
 
 // ── Camera PTZ Control ────────────────────────────────────────────────────────
 // Browser sends commands → queued in cache → camera-control.py executes locally
@@ -36,4 +42,17 @@ Route::get('/surveillance/cameras/settings',        [CameraController::class, 'g
 Route::post('/surveillance/cameras/{id}/quality',           [StreamQualityController::class, 'setQuality']);
 Route::get('/surveillance/cameras/{id}/quality/settings',   [StreamQualityController::class, 'getSettings']);
 Route::get('/surveillance/quality/presets',                  [StreamQualityController::class, 'presets']);
+
+// ── Test Mode & Diagnostics ──────────────────────────────────────────────────
+Route::post('/surveillance/diagnostic/start',             [DiagnosticController::class, 'start']);
+Route::get('/surveillance/diagnostic/status/{requestId}', [DiagnosticController::class, 'status']);
+
+// ── QNAP Sync Control ────────────────────────────────────────────────────────
+Route::get('/surveillance/qnap/settings',              [QnapSyncController::class, 'getSettings']);
+Route::post('/surveillance/qnap/settings',             [QnapSyncController::class, 'saveSettings']);
+Route::post('/surveillance/sync/start',                [QnapSyncController::class, 'start']);
+Route::get('/surveillance/sync/progress/{requestId}',  [QnapSyncController::class, 'progress']);
+Route::post('/surveillance/sync/pause/{requestId}',    [QnapSyncController::class, 'pause']);
+Route::post('/surveillance/sync/resume/{requestId}',   [QnapSyncController::class, 'resume']);
+Route::post('/surveillance/sync/cancel/{requestId}',   [QnapSyncController::class, 'cancel']);
 

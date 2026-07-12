@@ -41,10 +41,14 @@
                 </div>
             </div>
 
-            <div class="sv-topbar-center" id="sv-status-bar">
+            <div class="sv-topbar-center" id="sv-status-bar" style="display:flex;gap:12px">
                 <div class="sv-status-pill">
                     <span class="sv-status-dot"></span>
                     SYSTEM ONLINE
+                </div>
+                <div class="sv-status-pill offline" id="jetson-status-pill">
+                    <span class="sv-status-dot"></span>
+                    JETSON OFFLINE
                 </div>
             </div>
 

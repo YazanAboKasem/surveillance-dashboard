@@ -76,10 +76,19 @@ class CameraController extends Controller
 
         \Log::info('[PTZ] Command queued', $command);
 
+        // Send via WebSocket instantly
+        try {
+            $wsService = app(\App\Services\JetsonWebSocketService::class);
+            $wsService->sendPtzCommand($cameraId, $command['id'], $action, $command['speed']);
+            \Log::info('[PTZ] Command sent via WebSocket', ['camera_id' => $cameraId, 'action' => $action]);
+        } catch (\Exception $e) {
+            \Log::error('[PTZ] Failed to send command via WebSocket: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'command' => $command,
-            'message' => 'PTZ command queued. Execute by running camera-control.py locally.',
+            'message' => 'PTZ command queued and sent via WebSocket.',
         ]);
     }
 
@@ -207,10 +216,33 @@ class CameraController extends Controller
 
         \Log::info('[Surveillance] Settings updated', array_merge(['camera_id' => $cameraId], $settings));
 
+        // Send via WebSocket instantly
+        try {
+            $camerasConfig = config('surveillance.cameras', []);
+            $allSettings = [];
+            foreach ($camerasConfig as $cam) {
+                if (! ($cam['enabled'] ?? false)) {
+                    continue;
+                }
+                $id = $cam['id'];
+                $camSettings = ($id === $cameraId) ? $settings : Cache::get("camera_settings_{$id}");
+                $allSettings[$id] = [
+                    'quality' => $camSettings['quality'] ?? 'hd',
+                    'fps'     => (int) ($camSettings['fps'] ?? 15),
+                ];
+            }
+
+            $wsService = app(\App\Services\JetsonWebSocketService::class);
+            $wsService->sendSettingsUpdate($allSettings);
+            \Log::info('[Surveillance] Settings update pushed via WebSocket', $allSettings);
+        } catch (\Exception $e) {
+            \Log::error('[Surveillance] Failed to push settings via WebSocket: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success'  => true,
             'settings' => $settings,
-            'message'  => "Camera settings queued. Python will apply: {$preset['width']}x{$preset['height']} @{$fps}fps {$preset['bitrate']}.",
+            'message'  => "Camera settings queued and pushed via WebSocket.",
         ]);
     }
 

@@ -841,3 +841,698 @@ body::before {
     padding: 8px 0;
 }
 
+/* ── Status Pills (Topbar) ─────────────────────────────────────────── */
+.sv-status-pill.offline {
+    background: rgba(255, 82, 82, 0.15);
+    border-color: rgba(255, 82, 82, 0.35);
+    color: var(--red);
+}
+.sv-status-pill.offline .sv-status-dot {
+    background-color: var(--red);
+    box-shadow: 0 0 8px var(--red);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+.sv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+.sv-btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+.sv-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-bright);
+}
+.sv-btn-accent {
+    background: var(--accent);
+    color: #ffffff;
+}
+.sv-btn-accent:hover {
+    background: #448aff;
+    box-shadow: 0 0 12px rgba(41, 121, 255, 0.4);
+}
+.sv-btn-danger {
+    background: rgba(255, 82, 82, 0.15);
+    border: 1px solid rgba(255, 82, 82, 0.3);
+    color: var(--red);
+}
+.sv-btn-danger:hover {
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(255, 82, 82, 0.4);
+}
+.sv-btn-secondary.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* ── Diagnostic Panel (Test Mode) ──────────────────────────────────── */
+.sv-diagnostic-panel, .sv-sync-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+.sv-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.2);
+}
+.sv-panel-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.sv-panel-header-title i {
+    font-size: 18px;
+    color: var(--accent);
+}
+.sv-panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+}
+@media (max-width: 1024px) {
+    .sv-panel-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.sv-panel-card {
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+}
+.sv-panel-card.full-width {
+    grid-column: 1 / -1;
+}
+.sv-card-header-sub {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sv-card-header-sub.align-center {
+    justify-content: space-between;
+}
+.sv-card-header-sub i {
+    color: var(--accent);
+}
+.sv-diagnostic-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    padding: 20px 0;
+}
+.sv-spinner-sm {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: sv-spin 0.8s linear infinite;
+}
+@keyframes sv-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Cameras status grid */
+.sv-camera-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+}
+.sv-diag-camera-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+}
+.sv-diag-camera-card.ok { border-color: rgba(0, 230, 118, 0.3); background: rgba(0, 230, 118, 0.02); }
+.sv-diag-camera-card.degraded { border-color: rgba(255, 171, 64, 0.3); background: rgba(255, 171, 64, 0.02); }
+.sv-diag-camera-card.offline { border-color: rgba(255, 82, 82, 0.3); background: rgba(255, 82, 82, 0.02); }
+
+.sv-diag-cam-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.sv-diag-cam-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+.sv-diag-status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.ok .sv-diag-status-badge { background: rgba(0, 230, 118, 0.15); color: var(--green); }
+.degraded .sv-diag-status-badge { background: rgba(255, 171, 64, 0.15); color: var(--amber); }
+.offline .sv-diag-status-badge { background: rgba(255, 82, 82, 0.15); color: var(--red); }
+
+.sv-diag-cam-details {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.sv-diag-cam-details .lbl {
+    color: var(--text-muted);
+}
+.sv-fallback-active-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    background: rgba(255, 171, 64, 0.15);
+    color: var(--amber);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+/* Streams Health Table */
+.sv-table-responsive {
+    overflow-x: auto;
+}
+.sv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.sv-table th, .sv-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+.sv-table th {
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(0,0,0,0.1);
+}
+.sv-table tbody tr:hover {
+    background: rgba(255,255,255,0.01);
+}
+.sv-td-loading {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-secondary);
+}
+.sv-mono {
+    font-family: var(--font-mono);
+}
+.sv-stream-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.sv-stream-badge.active { background: rgba(0, 230, 118, 0.15); color: var(--green); }
+.sv-stream-badge.inactive { background: rgba(255, 82, 82, 0.15); color: var(--red); }
+
+/* Tunnel Status Details */
+.sv-tunnel-status-alert.error {
+    background: rgba(255, 82, 82, 0.08);
+    border: 1px solid rgba(255, 82, 82, 0.2);
+    color: var(--red);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+}
+.sv-tunnel-status-alert.error p {
+    font-size: 11px;
+    margin-top: 6px;
+    line-height: 1.5;
+}
+.sv-tunnel-detail-card {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.01);
+}
+.sv-tunnel-detail-card.running { border-color: rgba(0, 230, 118, 0.2); }
+.sv-tunnel-detail-card.degraded { border-color: rgba(255, 171, 64, 0.2); }
+.sv-tunnel-detail-card.stopped { border-color: rgba(255, 82, 82, 0.2); }
+
+.sv-tunnel-detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+.sv-tunnel-detail-row .lbl {
+    color: var(--text-muted);
+}
+.sv-tunnel-detail-row .val.bold {
+    font-weight: 700;
+}
+.running .val { color: var(--green); }
+.degraded .val { color: var(--amber); }
+.stopped .val { color: var(--red); }
+
+.sv-tunnel-detail-row a {
+    color: var(--accent);
+    text-decoration: none;
+}
+.sv-tunnel-detail-row a:hover {
+    text-decoration: underline;
+}
+
+/* Log Viewer Container */
+.sv-log-container {
+    background: #040810;
+    border: 1px solid #102035;
+    border-radius: var(--radius-sm);
+    height: 240px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 12px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+.sv-log-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.sv-log-line {
+    white-space: pre-wrap;
+    line-height: 1.5;
+    display: flex;
+    gap: 8px;
+}
+.sv-log-timestamp {
+    color: #4a638d;
+    flex-shrink: 0;
+}
+.sv-log-level {
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 50px;
+}
+.sv-log-line.info .sv-log-level { color: #2979ff; }
+.sv-log-line.warn .sv-log-level { color: #ffab40; }
+.sv-log-line.error .sv-log-level { color: #ff5252; }
+.sv-log-line.system { color: #78909c; font-style: italic; }
+
+.sv-log-msg {
+    color: #e3f2fd;
+}
+.sv-log-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+    font-size: 11px;
+}
+
+.sv-log-controls {
+    display: flex;
+    gap: 8px;
+}
+.sv-input-sm {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+    padding: 4px 8px;
+    outline: none;
+    font-family: var(--font-main);
+}
+.sv-input-sm:focus {
+    border-color: var(--accent);
+}
+.sv-btn-sm {
+    font-family: var(--font-main);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+/* ── Modal Backdrop ─────────────────────────────────────────────────── */
+.sv-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 7, 16, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: sv-fadein 0.2s ease-out;
+}
+@keyframes sv-fadein {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.sv-modal-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 580px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    overflow: hidden;
+    animation: sv-scaleup 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes sv-scaleup {
+    from { transform: scale(0.95); }
+    to { transform: scale(1); }
+}
+.sv-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.1);
+}
+.sv-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sv-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+.sv-modal-close:hover {
+    color: var(--text-primary);
+}
+.sv-modal-body {
+    padding: 24px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.sv-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.1);
+}
+.sv-modal-error {
+    color: var(--red);
+    font-size: 12px;
+    margin-right: auto;
+    font-weight: 600;
+}
+
+/* ── Forms inside Modal ─────────────────────────────────────────────── */
+.sv-form-group {
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.sv-form-row {
+    display: flex;
+    gap: 16px;
+}
+.sv-form-row .sv-form-group {
+    flex: 1;
+}
+.sv-form-row .flex-3 { flex: 3; }
+.sv-form-row .flex-1 { flex: 1; }
+
+.sv-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.sv-input {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: var(--font-main);
+}
+.sv-input:focus {
+    border-color: var(--accent);
+}
+.sv-input-inline {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 6px;
+    width: 60px;
+    outline: none;
+    margin-left: 8px;
+}
+.sv-input-inline:disabled {
+    opacity: 0.5;
+}
+
+/* Radio & Checkbox layouts */
+.sv-radio-group, .sv-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+}
+.sv-checkbox-group {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.sv-radio-label, .sv-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text-primary);
+    user-select: none;
+}
+.sv-radio-label input, .sv-checkbox-label input {
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+.sv-form-group.checkbox-only {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+/* ── Progress & Sync UI ──────────────────────────────────────────────── */
+.sv-progress-row {
+    margin-bottom: 20px;
+}
+.sv-progress-bar-container {
+    height: 12px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+.sv-progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 6px;
+    transition: width 0.3s ease, background 0.3s ease;
+}
+.sv-progress-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.sv-sync-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.sv-sync-stat-box {
+    background: rgba(0,0,0,0.15);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.sv-sync-stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.sv-sync-stat-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sv-current-file-box {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 12px;
+    display: flex;
+    gap: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sv-current-file-label {
+    color: var(--text-muted);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.sv-current-file-val {
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+}
+
+/* Completion Report */
+.sv-report-box {
+    margin-top: 20px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    animation: sv-fadein 0.3s;
+}
+.sv-report-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.sv-report-title.success { color: var(--green); }
+.sv-report-title.error { color: var(--red); }
+.sv-report-title.warn { color: var(--amber); }
+
+.sv-report-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+    font-size: 12px;
+}
+.report-stat-row {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-muted);
+}
+.report-stat-row .val {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.report-stat-row .val.green { color: var(--green); }
+.report-stat-row .val.red { color: var(--red); }
+.report-stat-row .val.warn { color: var(--amber); }
+.report-stat-row .val.error-msg {
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+
+.sv-failed-files-container {
+    margin-top: 14px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+.sv-failed-files-container h5 {
+    font-size: 12px;
+    color: var(--red);
+    margin-bottom: 6px;
+}
+.sv-failed-files-container ul {
+    list-style: none;
+    max-height: 100px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.2);
+    padding: 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.5;
+}
+.sv-failed-files-container li {
+    margin-bottom: 4px;
+    border-bottom: 1px dashed rgba(255,255,255,0.05);
+    padding-bottom: 4px;
+}
+.sv-failed-files-container li:last-child {
+    border-bottom: none;
+}
+.sv-failed-files-container .file {
+    color: var(--text-secondary);
+}
+.sv-failed-files-container .reason {
+    color: var(--red);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.pulse {
+    animation: sv-pulse-anim 1.5s infinite alternate;
+}
+@keyframes sv-pulse-anim {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+}
+
+

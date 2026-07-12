@@ -65,6 +65,29 @@ class StreamQualityController extends Controller
             . "{$settings['width']}x{$settings['height']} "
             . "@{$settings['fps']}fps @{$settings['bitrate']}Kbps");
 
+        // Send via WebSocket instantly
+        try {
+            $camerasConfig = config('surveillance.cameras', []);
+            $allSettings = [];
+            foreach ($camerasConfig as $cam) {
+                if (! ($cam['enabled'] ?? false)) {
+                    continue;
+                }
+                $id = $cam['id'];
+                $camSettings = ($id === $cameraId) ? $settings : Cache::get("camera_settings_{$id}");
+                $allSettings[$id] = [
+                    'quality' => $camSettings['quality'] ?? 'hd',
+                    'fps'     => (int) ($camSettings['fps'] ?? 15),
+                ];
+            }
+
+            $wsService = app(\App\Services\JetsonWebSocketService::class);
+            $wsService->sendSettingsUpdate($allSettings);
+            \Log::info('[StreamQuality] Settings update pushed via WebSocket', $allSettings);
+        } catch (\Exception $e) {
+            \Log::error('[StreamQuality] Failed to push settings via WebSocket: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success'  => true,
             'camera'   => $cameraId,
