@@ -61,6 +61,7 @@ class DiagnosticController extends Controller
 
         return response()->json([
             'request_id' => $requestId,
+            'jetson_online' => $this->wsService->isOnline(),
             'cameras' => $cameraStatus,
             'streams' => $streamStatus,
             'tunnel' => $tunnelStatus,

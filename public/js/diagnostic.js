@@ -5,8 +5,15 @@
     'use strict';
 
     let diagnosticInterval = null;
+    let diagnosticTimeout = null;
     let currentRequestId = null;
     let logLines = [];
+    let diagnosticStartTime = null;
+    let receivedSections = { cameras: false, streams: false, tunnel: false, logs: false };
+    let lastKnownJetsonOnline = null;
+
+    const DIAGNOSTIC_TIMEOUT_MS = 20000; // 20 seconds before showing timeout error
+    const POLL_INTERVAL_MS = 1500;
 
     // Boot & Status Loop
     window.addEventListener('DOMContentLoaded', function () {
@@ -169,8 +176,12 @@
         .then(data => {
             if (data.success) {
                 currentRequestId = data.request_id;
+                diagnosticStartTime = Date.now();
+                receivedSections = { cameras: false, streams: false, tunnel: false, logs: false };
                 // Start polling results
-                diagnosticInterval = setInterval(pollDiagnosticStatus, 1500);
+                diagnosticInterval = setInterval(pollDiagnosticStatus, POLL_INTERVAL_MS);
+            } else {
+                showDiagnosticError(data.error || 'Failed to trigger diagnostics.');
             }
         })
         .catch(err => {
@@ -187,6 +198,11 @@
             clearInterval(diagnosticInterval);
             diagnosticInterval = null;
         }
+        if (diagnosticTimeout) {
+            clearTimeout(diagnosticTimeout);
+            diagnosticTimeout = null;
+        }
+        diagnosticStartTime = null;
     }
 
     /**
@@ -221,6 +237,86 @@
     }
 
     /**
+     * Show timeout error for a specific section
+     */
+    function showSectionTimeout(elementId, sectionName) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        let reason;
+        if (lastKnownJetsonOnline === false) {
+            reason = 'Jetson is <strong>OFFLINE</strong>. Make sure connect-to-server.sh is running on the Jetson device.';
+        } else {
+            reason = `Jetson did not respond within ${DIAGNOSTIC_TIMEOUT_MS / 1000}s. The WebSocket server (php artisan websocket:serve) may not be running, or there is a connectivity issue.`;
+        }
+
+        if (elementId === 'diag-streams-list') {
+            el.innerHTML = `
+                <tr>
+                    <td colspan="3" class="sv-td-loading">
+                        <div class="sv-tunnel-status-alert error" style="margin:0">
+                            <div class="sv-alert-header">
+                                <i class="bi bi-exclamation-triangle-fill"></i> ${sectionName} — No Response
+                            </div>
+                            <p class="sv-mono" style="font-size:0.8rem;margin-top:4px">${reason}</p>
+                        </div>
+                    </td>
+                </tr>`;
+        } else if (elementId === 'diag-log-list') {
+            el.innerHTML = `
+                <div class="sv-log-line error">
+                    <span class="sv-log-level">TIMEOUT</span>
+                    <span class="sv-log-msg">${reason}</span>
+                </div>`;
+        } else {
+            el.innerHTML = `
+                <div class="sv-tunnel-status-alert error">
+                    <div class="sv-alert-header">
+                        <i class="bi bi-exclamation-triangle-fill"></i> ${sectionName} — No Response
+                    </div>
+                    <p class="sv-mono" style="font-size:0.8rem;margin-top:4px">${reason}</p>
+                </div>`;
+        }
+    }
+
+    /**
+     * Check if all sections have timed out and stop polling
+     */
+    function checkAllTimedOut() {
+        if (!diagnosticStartTime) return;
+        const elapsed = Date.now() - diagnosticStartTime;
+        if (elapsed < DIAGNOSTIC_TIMEOUT_MS) return;
+
+        // Show timeout for each section that hasn't received data
+        if (!receivedSections.cameras) {
+            showSectionTimeout('diag-cameras-list', 'Camera Check');
+        }
+        if (!receivedSections.streams) {
+            showSectionTimeout('diag-streams-list', 'Stream Check');
+        }
+        if (!receivedSections.tunnel) {
+            showSectionTimeout('diag-tunnel-info', 'Tunnel Check');
+        }
+        if (!receivedSections.logs) {
+            showSectionTimeout('diag-log-list', 'Log Retrieval');
+        }
+
+        // If no sections have received data at all, stop polling completely
+        const anyReceived = Object.values(receivedSections).some(v => v);
+        if (!anyReceived) {
+            stopDiagnosticPolling();
+            console.warn('[Diagnostics] Timeout: No data received from Jetson. Stopped polling.');
+        } else {
+            // Some data received — check if ALL timed-out sections are resolved
+            const allResolved = Object.values(receivedSections).every(v => v);
+            if (allResolved) {
+                stopDiagnosticPolling();
+                console.info('[Diagnostics] All sections received. Stopped polling.');
+            }
+        }
+    }
+
+    /**
      * Poll Status from Laravel Cache
      */
     function pollDiagnosticStatus() {
@@ -234,12 +330,43 @@
         })
         .then(r => r.json())
         .then(data => {
-            if (data.cameras) renderCameras(data.cameras.cameras);
-            if (data.streams) renderStreams(data.streams.streams);
-            if (data.tunnel) renderTunnel(data.tunnel);
-            if (data.logs) renderLogs(data.logs.lines);
+            // Track Jetson online status for better error messages
+            if (data.jetson_online !== undefined) {
+                lastKnownJetsonOnline = data.jetson_online;
+            }
+
+            if (data.cameras) {
+                receivedSections.cameras = true;
+                renderCameras(data.cameras.cameras);
+            }
+            if (data.streams) {
+                receivedSections.streams = true;
+                renderStreams(data.streams.streams);
+            }
+            if (data.tunnel) {
+                receivedSections.tunnel = true;
+                renderTunnel(data.tunnel);
+            }
+            if (data.logs) {
+                receivedSections.logs = true;
+                renderLogs(data.logs.lines);
+            }
+
+            // Check for timeout on sections that haven't responded
+            checkAllTimedOut();
+
+            // If all sections received, stop polling
+            const allReceived = Object.values(receivedSections).every(v => v);
+            if (allReceived) {
+                stopDiagnosticPolling();
+                console.info('[Diagnostics] All sections received. Polling stopped.');
+            }
         })
-        .catch(err => console.error('[Diagnostics] Poll error:', err));
+        .catch(err => {
+            console.error('[Diagnostics] Poll error:', err);
+            // Still check for timeout even on fetch error
+            checkAllTimedOut();
+        });
     }
 
     /**
@@ -416,6 +543,23 @@
         document.getElementById('diag-cameras-list').innerHTML = `
             <div class="sv-tunnel-status-alert error">
                 <i class="bi bi-x-circle-fill"></i> ${msg}
+            </div>`;
+        document.getElementById('diag-streams-list').innerHTML = `
+            <tr>
+                <td colspan="3">
+                    <div class="sv-tunnel-status-alert error" style="margin:0">
+                        <i class="bi bi-x-circle-fill"></i> ${msg}
+                    </div>
+                </td>
+            </tr>`;
+        document.getElementById('diag-tunnel-info').innerHTML = `
+            <div class="sv-tunnel-status-alert error">
+                <i class="bi bi-x-circle-fill"></i> ${msg}
+            </div>`;
+        document.getElementById('diag-log-list').innerHTML = `
+            <div class="sv-log-line error">
+                <span class="sv-log-level">ERROR</span>
+                <span class="sv-log-msg">${msg}</span>
             </div>`;
     }
 
