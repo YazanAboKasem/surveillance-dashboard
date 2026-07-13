@@ -125,4 +125,12 @@ class JetsonWebSocketService
 
         return null;
     }
+
+    /**
+     * Send reboot command.
+     */
+    public function sendReboot(): void
+    {
+        $this->sendEvent('jetson.reboot', []);
+    }
 }

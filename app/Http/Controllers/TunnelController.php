@@ -110,6 +110,10 @@ class TunnelController extends Controller
         }
 
         $header = $request->header('Authorization', '');
-        return $header === "Bearer {$token}";
+        $authorized = $header === "Bearer {$token}";
+        if ($authorized) {
+            app(\App\Services\JetsonWebSocketService::class)->markOnline($request);
+        }
+        return $authorized;
     }
 }

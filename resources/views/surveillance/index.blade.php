@@ -91,6 +91,9 @@
             <button class="sv-btn sv-btn-secondary" id="test-mode-toggle-btn" onclick="toggleTestMode()" style="display:inline-flex;align-items:center;gap:8px">
                 <i class="bi bi-cpu-fill"></i> Test Mode
             </button>
+            <button class="sv-btn sv-btn-danger" id="reboot-jetson-btn" onclick="rebootJetson()" style="display:inline-flex;align-items:center;gap:8px" disabled>
+                <i class="bi bi-power"></i> Restart Jetson
+            </button>
         </div>
     </div>
 

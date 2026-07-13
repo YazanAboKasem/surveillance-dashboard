@@ -29,6 +29,30 @@ class JetsonStatusController extends Controller
         );
     }
 
+    /**
+     * POST /api/surveillance/jetson/reboot
+     */
+    public function reboot(Request $request): JsonResponse
+    {
+        if (! $this->isAuthorized($request)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        if (! $this->wsService->isOnline()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Jetson is offline. Cannot send reboot command.'
+            ], 400);
+        }
+
+        $this->wsService->sendReboot();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reboot command sent to Jetson.'
+        ]);
+    }
+
     private function isAuthorized(Request $request): bool
     {
         $token = config('surveillance.api_token');

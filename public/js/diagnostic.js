@@ -28,20 +28,88 @@
         .then(r => r.json())
         .then(data => {
             const pill = document.getElementById('jetson-status-pill');
-            if (!pill) return;
+            if (pill) {
+                if (data.online) {
+                    pill.classList.remove('offline');
+                    pill.classList.add('online');
+                    pill.innerHTML = `<span class="sv-status-dot"></span> JETSON ONLINE (v${data.version})`;
+                } else {
+                    // Only update if it is not currently showing "REBOOTING..." set by click handler
+                    if (!pill.innerHTML.includes('REBOOTING')) {
+                        pill.classList.remove('online');
+                        pill.classList.add('offline');
+                        pill.innerHTML = `<span class="sv-status-dot"></span> JETSON OFFLINE`;
+                    }
+                }
+            }
 
-            if (data.online) {
-                pill.classList.remove('offline');
-                pill.classList.add('online');
-                pill.innerHTML = `<span class="sv-status-dot"></span> JETSON ONLINE (v${data.version})`;
-            } else {
-                pill.classList.remove('online');
-                pill.classList.add('offline');
-                pill.innerHTML = `<span class="sv-status-dot"></span> JETSON OFFLINE`;
+            const rebootBtn = document.getElementById('reboot-jetson-btn');
+            if (rebootBtn) {
+                // If it is currently rebooting, keep it disabled
+                if (rebootBtn.innerHTML.includes('Rebooting')) {
+                    rebootBtn.setAttribute('disabled', 'true');
+                } else {
+                    if (data.online) {
+                        rebootBtn.removeAttribute('disabled');
+                    } else {
+                        rebootBtn.setAttribute('disabled', 'true');
+                    }
+                }
             }
         })
         .catch(err => console.error('[Status] Error updating Jetson status:', err));
-    }
+    };
+
+    /**
+     * Reboot Jetson via Laravel WS API
+     */
+    window.rebootJetson = function() {
+        if (!confirm('Are you sure you want to reboot the Jetson system? This will interrupt the live streams for a couple of minutes.')) {
+            return;
+        }
+
+        const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const btn = document.getElementById('reboot-jetson-btn');
+
+        if (btn) {
+            btn.setAttribute('disabled', 'true');
+            btn.innerHTML = `<span class="sv-spinner-sm" style="border-top-color:#ff5252"></span> Rebooting...`;
+        }
+
+        fetch('/api/surveillance/jetson/reboot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-CSRF-TOKEN': csrf
+            }
+        })
+        .then(r => {
+            if (!r.ok) return r.json().then(err => { throw new Error(err.error || 'Reboot request failed') });
+            return r.json();
+        })
+        .then(data => {
+            alert('Reboot command successfully sent to the Jetson! It will restart now.');
+            // Update the Jetson status immediately to offline/rebooting
+            const pill = document.getElementById('jetson-status-pill');
+            if (pill) {
+                pill.classList.remove('online');
+                pill.classList.add('offline');
+                pill.innerHTML = `<span class="sv-status-dot"></span> JETSON REBOOTING...`;
+            }
+            if (btn) {
+                btn.innerHTML = `<i class="bi bi-power"></i> Restart Jetson`;
+            }
+        })
+        .catch(err => {
+            alert('Error: ' + err.message);
+            if (btn) {
+                btn.removeAttribute('disabled');
+                btn.innerHTML = `<i class="bi bi-power"></i> Restart Jetson`;
+            }
+        });
+    };
 
     /**
      * Toggle Test Mode Panel
