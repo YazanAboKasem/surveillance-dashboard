@@ -1,5 +1,6 @@
 /**
- * RoadShield QNAP Sync Controller
+ * RoadShield Recording Sync Controller
+ * Syncs recordings from Jetson to VPS server via HTTP upload.
  */
 (function () {
     'use strict';
@@ -8,24 +9,18 @@
     let currentSyncId = null;
     let syncState = 'stopped'; // stopped, syncing, paused, completed, error
 
-    // Load saved settings on load
-    window.addEventListener('DOMContentLoaded', function () {
-        loadSavedQnapSettings();
-    });
-
     /**
-     * Open QNAP Sync Modal
+     * Open Sync Modal
      */
     window.openSyncModal = function () {
         const modal = document.getElementById('qnap-sync-modal');
         if (modal) {
             modal.classList.remove('hidden');
-            loadSavedQnapSettings();
         }
     };
 
     /**
-     * Close QNAP Sync Modal
+     * Close Sync Modal
      */
     window.closeSyncModal = function () {
         const modal = document.getElementById('qnap-sync-modal');
@@ -56,32 +51,6 @@
     };
 
     /**
-     * Load QNAP credentials from Laravel database
-     */
-    function loadSavedQnapSettings() {
-        const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
-
-        fetch('/api/surveillance/qnap/settings', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success && data.settings) {
-                const s = data.settings;
-                document.getElementById('qnap-host').value = s.host || '';
-                document.getElementById('qnap-port').value = s.port || 443;
-                document.getElementById('qnap-protocol').value = s.protocol || 'https';
-                document.getElementById('qnap-username').value = s.username || '';
-                document.getElementById('qnap-password').value = s.password || '';
-                document.getElementById('qnap-remote-path').value = s.remote_path || '/Recordings/RoadShield/';
-            }
-        })
-        .catch(err => console.error('[QNAP] Failed to load settings:', err));
-    }
-
-    /**
      * Submit form & start Sync
      */
     window.submitSyncForm = function (e) {
@@ -96,18 +65,11 @@
         const selectedCams = Array.from(document.querySelectorAll('input[name="sync-cameras"]:checked')).map(el => el.value);
 
         const payload = {
-            host: document.getElementById('qnap-host').value,
-            port: parseInt(document.getElementById('qnap-port').value, 10),
-            protocol: document.getElementById('qnap-protocol').value,
-            username: document.getElementById('qnap-username').value,
-            password: document.getElementById('qnap-password').value,
-            remote_path: document.getElementById('qnap-remote-path').value,
             scope: scope,
             cameras: scope === 'cameras' ? selectedCams : [],
             days: scope === 'last_n_days' ? parseInt(document.getElementById('sync-days').value, 10) : null,
             delete_after_upload: document.getElementById('delete-after-upload').checked,
             overwrite_existing: document.getElementById('overwrite-existing').checked,
-            remember: document.getElementById('remember-settings').checked
         };
 
         fetch('/api/surveillance/sync/start', {
@@ -151,7 +113,7 @@
             document.getElementById('sync-stat-uploaded').textContent = '0.0 GB / 0.0 GB';
             document.getElementById('sync-stat-speed').textContent = '0.0 Mbps';
             document.getElementById('sync-stat-eta').textContent = 'Calculating...';
-            document.getElementById('sync-current-file').textContent = 'Connecting to NAS...';
+            document.getElementById('sync-current-file').textContent = 'Connecting to server...';
             document.getElementById('sync-action-buttons').classList.remove('hidden');
             
             // Set Pause label correctly
@@ -349,7 +311,7 @@
         const failedList = document.getElementById('sync-failed-files-list');
 
         report.classList.remove('hidden');
-        title.textContent = 'Sync Authentication / Connection Failed';
+        title.textContent = 'Sync Connection Failed';
         title.className = 'sv-report-title error';
 
         stats.innerHTML = `

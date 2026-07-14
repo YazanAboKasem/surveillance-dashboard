@@ -2,7 +2,7 @@
     <div class="sv-panel-header">
         <div class="sv-panel-header-title">
             <i class="bi bi-cloud-arrow-up-fill pulse" style="color:var(--green)"></i>
-            <span>Syncing to QNAP NAS</span>
+            <span>Syncing Recordings to Server</span>
         </div>
         <div class="sv-panel-header-actions" id="sync-action-buttons">
             <button class="sv-btn sv-btn-secondary" id="sync-pause-btn" onclick="pauseSync()">

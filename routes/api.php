@@ -5,6 +5,7 @@ use App\Http\Controllers\StreamQualityController;
 use App\Http\Controllers\TunnelController;
 use App\Http\Controllers\DiagnosticController;
 use App\Http\Controllers\QnapSyncController;
+use App\Http\Controllers\RecordingUploadController;
 use App\Http\Controllers\JetsonStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,12 +49,15 @@ Route::get('/surveillance/quality/presets',                  [StreamQualityContr
 Route::post('/surveillance/diagnostic/start',             [DiagnosticController::class, 'start']);
 Route::get('/surveillance/diagnostic/status/{requestId}', [DiagnosticController::class, 'status']);
 
-// ── QNAP Sync Control ────────────────────────────────────────────────────────
-Route::get('/surveillance/qnap/settings',              [QnapSyncController::class, 'getSettings']);
-Route::post('/surveillance/qnap/settings',             [QnapSyncController::class, 'saveSettings']);
+// ── Recording Sync Control ──────────────────────────────────────────────────
 Route::post('/surveillance/sync/start',                [QnapSyncController::class, 'start']);
 Route::get('/surveillance/sync/progress/{requestId}',  [QnapSyncController::class, 'progress']);
 Route::post('/surveillance/sync/pause/{requestId}',    [QnapSyncController::class, 'pause']);
 Route::post('/surveillance/sync/resume/{requestId}',   [QnapSyncController::class, 'resume']);
 Route::post('/surveillance/sync/cancel/{requestId}',   [QnapSyncController::class, 'cancel']);
 
+// ── Recording Upload & Browse (VPS Storage) ─────────────────────────────────
+Route::post('/surveillance/recordings/upload',                      [RecordingUploadController::class, 'upload']);
+Route::get('/surveillance/recordings/browse/{jetsonName?}',         [RecordingUploadController::class, 'browse']);
+Route::get('/surveillance/recordings/download/{jetsonName}/{path}', [RecordingUploadController::class, 'download'])
+    ->where('path', '.*');

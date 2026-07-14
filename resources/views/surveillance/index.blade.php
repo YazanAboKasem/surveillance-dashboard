@@ -86,7 +86,7 @@
         </div>
         <div style="display:flex;gap:12px;margin-left:auto">
             <button class="sv-btn sv-btn-secondary" id="sync-recordings-btn" onclick="openSyncModal()" style="display:inline-flex;align-items:center;gap:8px">
-                <i class="bi bi-hdd-network-fill"></i> Sync Recordings
+                <i class="bi bi-cloud-arrow-up-fill"></i> Sync Recordings
             </button>
             <button class="sv-btn sv-btn-secondary" id="test-mode-toggle-btn" onclick="toggleTestMode()" style="display:inline-flex;align-items:center;gap:8px">
                 <i class="bi bi-cpu-fill"></i> Test Mode
@@ -100,10 +100,10 @@
     <!-- Diagnostics Panel (Test Mode) -->
     <x-diagnostic />
 
-    <!-- QNAP Sync Progress Panel -->
+    <!-- Sync Progress Panel -->
     <x-sync-progress />
 
-    <!-- QNAP Sync Modal -->
+    <!-- Sync Modal -->
     <x-qnap-sync-modal />
 
     {{--

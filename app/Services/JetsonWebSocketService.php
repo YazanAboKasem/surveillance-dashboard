@@ -93,12 +93,13 @@ class JetsonWebSocketService
 
     /**
      * Send sync start command.
+     * VPS config contains: upload_url, token
      */
-    public function sendSyncStart(string $requestId, array $qnap, array $options): void
+    public function sendSyncStart(string $requestId, array $vpsConfig, array $options): void
     {
         $this->sendEvent('sync.start', [
             'request_id' => $requestId,
-            'qnap' => $qnap,
+            'vps' => $vpsConfig,
             'options' => $options
         ]);
     }

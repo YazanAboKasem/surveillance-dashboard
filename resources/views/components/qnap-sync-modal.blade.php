@@ -2,53 +2,25 @@
     <div class="sv-modal-card">
         <div class="sv-modal-header">
             <h3 class="sv-modal-title">
-                <i class="bi bi-hdd-network-fill" style="color:var(--accent)"></i>
-                Sync Recordings to QNAP NAS
+                <i class="bi bi-cloud-arrow-up-fill" style="color:var(--accent)"></i>
+                Sync Recordings to Server
             </h3>
             <button class="sv-modal-close" onclick="closeSyncModal()">&times;</button>
         </div>
         <form id="qnap-sync-form" onsubmit="submitSyncForm(event)">
             <div class="sv-modal-body">
-                <!-- Host & Protocol -->
-                <div class="sv-form-row">
-                    <div class="sv-form-group flex-3">
-                        <label for="qnap-host" class="sv-label">QNAP Host/IP</label>
-                        <input type="text" id="qnap-host" class="sv-input" required placeholder="e.g. nas.local or 192.168.1.100">
-                    </div>
-                    <div class="sv-form-group flex-1">
-                        <label for="qnap-port" class="sv-label">Port</label>
-                        <input type="number" id="qnap-port" class="sv-input" value="443" required>
-                    </div>
-                    <div class="sv-form-group flex-1">
-                        <label for="qnap-protocol" class="sv-label">Protocol</label>
-                        <select id="qnap-protocol" class="sv-input">
-                            <option value="https">HTTPS</option>
-                            <option value="http">HTTP</option>
-                        </select>
-                    </div>
-                </div>
 
-                <!-- Username & Password -->
-                <div class="sv-form-row">
-                    <div class="sv-form-group">
-                        <label for="qnap-username" class="sv-label">Username</label>
-                        <input type="text" id="qnap-username" class="sv-input" required autocomplete="username">
+                {{-- Info banner --}}
+                <div class="sv-form-group" style="background:var(--surface-2);border-radius:8px;padding:12px 16px;border:1px solid var(--border);margin-bottom:16px">
+                    <div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:0.85rem">
+                        <i class="bi bi-info-circle-fill" style="color:var(--accent)"></i>
+                        <span>Recordings will be uploaded from Jetson to this server, organized by device name and camera.</span>
                     </div>
-                    <div class="sv-form-group">
-                        <label for="qnap-password" class="sv-label">Password</label>
-                        <input type="password" id="qnap-password" class="sv-input" required autocomplete="current-password">
-                    </div>
-                </div>
-
-                <!-- Remote Path -->
-                <div class="sv-form-group">
-                    <label for="qnap-remote-path" class="sv-label">Remote Path</label>
-                    <input type="text" id="qnap-remote-path" class="sv-input" value="/Recordings/RoadShield/" required>
                 </div>
 
                 <!-- Sync Options -->
                 <div class="sv-form-group">
-                    <label class="sv-label">Sync Options</label>
+                    <label class="sv-label">Sync Scope</label>
                     <div class="sv-radio-group">
                         <label class="sv-radio-label">
                             <input type="radio" name="sync-scope" value="all" checked onchange="toggleScopeInputs()">
@@ -93,11 +65,7 @@
                     </label>
                     <label class="sv-checkbox-label">
                         <input type="checkbox" id="overwrite-existing">
-                        <span>Overwrite existing files on QNAP</span>
-                    </label>
-                    <label class="sv-checkbox-label">
-                        <input type="checkbox" id="remember-settings" checked>
-                        <span>Remember settings (encrypted on server)</span>
+                        <span>Overwrite existing files on server</span>
                     </label>
                 </div>
             </div>
