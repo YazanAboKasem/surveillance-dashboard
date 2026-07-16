@@ -60,6 +60,21 @@ class SurveillanceController extends Controller
     }
 
     /**
+     * Display recordings sync page for a specific device.
+     */
+    public function syncPage(string $deviceId): View
+    {
+        $devices = $this->resolveAllDevices();
+        $device = $devices->firstWhere('id', $deviceId);
+
+        if (!$device) {
+            abort(404, "Device {$deviceId} not found");
+        }
+
+        return view('surveillance.sync', compact('device', 'devices'));
+    }
+
+    /**
      * Resolve all enabled devices with their cameras and stream URLs.
      */
     private function resolveAllDevices()

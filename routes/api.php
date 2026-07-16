@@ -50,6 +50,7 @@ Route::post('/surveillance/diagnostic/start',             [DiagnosticController:
 Route::get('/surveillance/diagnostic/status/{requestId}', [DiagnosticController::class, 'status']);
 
 // ── Recording Sync Control ──────────────────────────────────────────────────
+Route::post('/surveillance/sync/scan',                 [QnapSyncController::class, 'scan']);
 Route::post('/surveillance/sync/start',                [QnapSyncController::class, 'start']);
 Route::get('/surveillance/sync/progress/{requestId}',  [QnapSyncController::class, 'progress']);
 Route::post('/surveillance/sync/pause/{requestId}',    [QnapSyncController::class, 'pause']);
