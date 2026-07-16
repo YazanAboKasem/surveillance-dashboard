@@ -8,7 +8,8 @@
     let currentSyncId = null;
     let syncState = 'stopped'; // stopped, syncing, paused, completed, error
     let filesList = null;
-    let scannedFilesCache = []; // cache the scanned files list
+    let scannedFilesCache = []; // cache the scanned files list (array of objects)
+    let scanDebounceTimer = null;
 
     /**
      * Format bytes to human readable format
@@ -20,6 +21,23 @@
         const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    /**
+     * Format seconds to HH:MM:SS or MM:SS
+     */
+    function formatDuration(seconds) {
+        if (!seconds || isNaN(seconds) || seconds <= 0) return '00:00';
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        const pad = (num) => String(num).padStart(2, '0');
+        
+        if (hrs > 0) {
+            return `${hrs}:${pad(mins)}:${pad(secs)}`;
+        }
+        return `${pad(mins)}:${pad(secs)}`;
     }
 
     /**
@@ -44,14 +62,19 @@
     };
 
     /**
-     * Scan Jetson for Files
+     * Scan Jetson for Files (Debounced to avoid multiple requests while typing)
      */
-    window.scanFiles = function (e) {
-        if (e) e.preventDefault();
+    window.scanFiles = function () {
+        if (scanDebounceTimer) {
+            clearTimeout(scanDebounceTimer);
+        }
+        scanDebounceTimer = setTimeout(performScanFiles, 300);
+    };
 
+    function performScanFiles() {
         const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        const scanBtn = document.getElementById('scan-files-btn');
+        const indicator = document.getElementById('scanning-indicator');
         
         // Form parameters
         const scope = document.querySelector('input[name="sync-scope"]:checked')?.value;
@@ -65,11 +88,9 @@
         };
 
         // UI Feedback
-        scanBtn.setAttribute('disabled', 'true');
-        scanBtn.innerHTML = `<i class="bi bi-arrow-repeat" style="display:inline-block; animation:sv-spin 1s linear infinite;"></i> Scanning Jetson...`;
-        
-        // Hide card in case it was visible from previous run
-        document.getElementById('scanned-files-card').classList.add('hidden');
+        if (indicator) {
+            indicator.classList.remove('hidden');
+        }
 
         fetch('/api/surveillance/sync/scan', {
             method: 'POST',
@@ -91,13 +112,15 @@
         })
         .catch(err => {
             console.error('[Sync Scan] Error:', err);
-            alert('Scan error: ' + err.message);
+            // Hide files list if scan failed
+            document.getElementById('scanned-files-card').classList.add('hidden');
         })
         .finally(() => {
-            scanBtn.removeAttribute('disabled');
-            scanBtn.innerHTML = `<i class="bi bi-search"></i> Scan Jetson for Files`;
+            if (indicator) {
+                indicator.classList.add('hidden');
+            }
         });
-    };
+    }
 
     /**
      * Rescan helper
@@ -112,45 +135,126 @@
     function renderScannedFiles(files) {
         scannedFilesCache = files;
         const card = document.getElementById('scanned-files-card');
-        const countSpan = document.getElementById('scanned-files-count');
-        const sizeSpan = document.getElementById('scanned-files-size');
+        const countSpans = document.querySelectorAll('#scanned-files-count');
+        const sizeSpans = document.querySelectorAll('#scanned-files-size');
         const tbody = document.getElementById('scanned-files-tbody');
+        const selectAllCheckbox = document.getElementById('select-all-files-checkbox');
 
-        countSpan.textContent = files.length;
-        
+        // Set total counts & sizes
         let totalSize = 0;
+        files.forEach(f => totalSize += f.size);
+
+        countSpans.forEach(el => el.textContent = files.length);
+        sizeSpans.forEach(el => el.textContent = formatBytes(totalSize));
+
+        // Reset Select All
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = true;
+        }
+        
         let rowsHtml = '';
 
         if (files.length === 0) {
-            rowsHtml = `<tr><td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">No recording files found matching the criteria.</td></tr>`;
+            rowsHtml = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">No recording files found matching the criteria.</td></tr>`;
             document.getElementById('start-sync-btn').setAttribute('disabled', 'true');
         } else {
             document.getElementById('start-sync-btn').removeAttribute('disabled');
             files.forEach((file, index) => {
-                totalSize += file.size;
-                rowsHtml += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <td style="padding: 8px 12px; color: var(--text-muted);">${index + 1}</td>
-                    <td style="padding: 8px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px;" title="${file.name}">${file.name}</td>
-                    <td style="padding: 8px 12px; text-align: right;">${formatBytes(file.size)}</td>
+                rowsHtml += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;" onclick="toggleRowCheckbox(event, ${index})">
+                    <td style="padding: 8px 12px; text-align: center;" onclick="event.stopPropagation();">
+                        <input type="checkbox" class="file-select-checkbox" data-rel-path="${file.name}" data-size="${file.size}" checked onchange="updateSelectedStats()">
+                    </td>
+                    <td style="padding: 8px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 450px;" title="${file.name}">${file.name}</td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--accent); font-weight: 500;">${formatDuration(file.duration)}</td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--text-muted);">${formatBytes(file.size)}</td>
                 </tr>`;
             });
         }
 
-        sizeSpan.textContent = formatBytes(totalSize);
         tbody.innerHTML = rowsHtml;
         card.classList.remove('hidden');
         
-        // Scroll card into view smoothly
-        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Update selection stats
+        updateSelectedStats();
     }
 
     /**
-     * Start the upload synchronization
+     * Click row to toggle checkbox
+     */
+    window.toggleRowCheckbox = function(e, index) {
+        const tbody = document.getElementById('scanned-files-tbody');
+        const checkbox = tbody.querySelectorAll('.file-select-checkbox')[index];
+        if (checkbox) {
+            checkbox.checked = !checkbox.checked;
+            updateSelectedStats();
+        }
+    };
+
+    /**
+     * Toggle all files selection
+     */
+    window.toggleSelectAllFiles = function(master) {
+        const checkboxes = document.querySelectorAll('.file-select-checkbox');
+        checkboxes.forEach(cb => cb.checked = master.checked);
+        updateSelectedStats();
+    };
+
+    /**
+     * Recalculate and update selected files statistics
+     */
+    window.updateSelectedStats = function() {
+        const checkboxes = Array.from(document.querySelectorAll('.file-select-checkbox'));
+        const checkedBoxes = checkboxes.filter(cb => cb.checked);
+        
+        const countSpan = document.getElementById('selected-files-count');
+        const sizeSpan = document.getElementById('selected-files-size');
+        const startBtn = document.getElementById('start-sync-btn');
+        const selectAllCheckbox = document.getElementById('select-all-files-checkbox');
+
+        // Update counts
+        if (countSpan) {
+            countSpan.textContent = checkedBoxes.length;
+        }
+
+        // Update sizes
+        let totalSize = 0;
+        checkedBoxes.forEach(cb => {
+            totalSize += parseInt(cb.getAttribute('data-size'), 10) || 0;
+        });
+        if (sizeSpan) {
+            sizeSpan.textContent = formatBytes(totalSize);
+        }
+
+        // Enable/Disable Start button
+        if (checkedBoxes.length === 0) {
+            startBtn.setAttribute('disabled', 'true');
+        } else {
+            startBtn.removeAttribute('disabled');
+        }
+
+        // Update Select All checkbox state
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checkedBoxes.length === checkboxes.length && checkboxes.length > 0;
+            selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < checkboxes.length;
+        }
+    };
+
+    /**
+     * Start the upload synchronization (only checked files)
      */
     window.startSynchronize = function() {
         const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const startBtn = document.getElementById('start-sync-btn');
+
+        // Collect checked files relative paths
+        const checkedBoxes = Array.from(document.querySelectorAll('.file-select-checkbox:checked'));
+        const selectedPaths = checkedBoxes.map(cb => cb.getAttribute('data-rel-path'));
+
+        if (selectedPaths.length === 0) {
+            alert('No files selected for synchronization.');
+            return;
+        }
 
         const scope = document.querySelector('input[name="sync-scope"]:checked')?.value;
         const selectedCams = Array.from(document.querySelectorAll('input[name="sync-cameras"]:checked')).map(el => el.value);
@@ -162,6 +266,7 @@
             days: days,
             delete_after_upload: document.getElementById('delete-after-upload').checked,
             overwrite_existing: document.getElementById('overwrite-existing').checked,
+            files: selectedPaths // Send selected files!
         };
 
         startBtn.setAttribute('disabled', 'true');
@@ -220,8 +325,10 @@
             document.getElementById('sync-pause-btn').innerHTML = `<i class="bi bi-pause-fill"></i> Pause`;
             syncState = 'syncing';
             
-            // Populate file queue initial list
-            filesList = scannedFilesCache.map(f => f.name);
+            // Populate file queue initial list (only selected files)
+            const checkedBoxes = Array.from(document.querySelectorAll('.file-select-checkbox:checked'));
+            filesList = checkedBoxes.map(cb => cb.getAttribute('data-rel-path'));
+            
             const scrollContainer = document.getElementById('sync-files-list-scroll');
             if (scrollContainer && filesList.length > 0) {
                 scrollContainer.innerHTML = filesList.map((filename) => {
@@ -537,5 +644,10 @@
         // Redirect back to settings page
         window.location.href = `/surveillance/devices/${window.CURRENT_DEVICE_ID}`;
     };
+
+    // Auto-trigger scan on page load!
+    window.addEventListener('DOMContentLoaded', () => {
+        performScanFiles();
+    });
 
 })();

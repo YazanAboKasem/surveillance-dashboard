@@ -41,6 +41,7 @@ class QnapSyncController extends Controller
             'days' => 'nullable|integer',
             'delete_after_upload' => 'boolean',
             'overwrite_existing' => 'boolean',
+            'files' => 'nullable|array',
         ]);
 
         $requestId = 'sync_' . uniqid();
@@ -63,6 +64,7 @@ class QnapSyncController extends Controller
             'days' => $request->input('days') ? (int) $request->input('days') : null,
             'delete_after_upload' => $request->boolean('delete_after_upload'),
             'overwrite_existing' => $request->boolean('overwrite_existing'),
+            'files' => $request->input('files', []),
         ];
 
         // Send sync start command via WS
@@ -181,8 +183,8 @@ class QnapSyncController extends Controller
 
         $this->wsService->sendSyncListFiles($requestId, $options);
 
-        // Poll cache for response (up to 5.0 seconds)
-        $response = $this->wsService->getEventResponse('sync.list_files.ack', $requestId, 5.0);
+        // Poll cache for response (up to 10.0 seconds)
+        $response = $this->wsService->getEventResponse('sync.list_files.ack', $requestId, 10.0);
 
         if (!$response) {
             return response()->json([
