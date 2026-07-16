@@ -41,6 +41,32 @@
     }
 
     /**
+     * Format filename (e.g. cam1/2026-07-16/08-00-00.mp4) to AM/PM format (e.g. cam1 / 2026-07-16 / 08:00 AM.mp4)
+     */
+    function formatFilenameToAmPm(filename) {
+        if (!filename) return '';
+        const pathParts = filename.split('/');
+        const fname = pathParts[pathParts.length - 1];
+        const basename = fname.split('.')[0];
+        const ext = fname.split('.')[1] || 'mp4';
+        const timeParts = basename.split('-');
+        if (timeParts.length === 3) {
+            const hour = parseInt(timeParts[0], 10);
+            const min = timeParts[1];
+            const amPm = hour >= 12 ? 'PM' : 'AM';
+            let displayHour = hour % 12;
+            if (displayHour === 0) displayHour = 12;
+            const paddedHour = String(displayHour).padStart(2, '0');
+            
+            if (pathParts.length > 2) {
+                return `${pathParts[0]} / ${pathParts[1]} / ${paddedHour}:${min} ${amPm}.${ext}`;
+            }
+            return `${paddedHour}:${min} ${amPm}.${ext}`;
+        }
+        return filename;
+    }
+
+    /**
      * Toggle Scope inputs (disable/enable Days or Cameras select)
      */
     window.toggleScopeInputs = function () {
@@ -164,7 +190,7 @@
                     <td style="padding: 8px 12px; text-align: center;" onclick="event.stopPropagation();">
                         <input type="checkbox" class="file-select-checkbox" data-rel-path="${file.name}" data-size="${file.size}" checked onchange="updateSelectedStats()">
                     </td>
-                    <td style="padding: 8px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 450px;" title="${file.name}">${file.name}</td>
+                    <td style="padding: 8px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 450px;" title="${file.name}">${formatFilenameToAmPm(file.name)}</td>
                     <td style="padding: 8px 12px; text-align: right; color: var(--accent); font-weight: 500;">${formatDuration(file.duration)}</td>
                     <td style="padding: 8px 12px; text-align: right; color: var(--text-muted);">${formatBytes(file.size)}</td>
                 </tr>`;
@@ -449,7 +475,7 @@
                     }
                     
                     return `<div style="${itemStyle}">
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;" title="${filename}">${filename}</span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;" title="${filename}">${formatFilenameToAmPm(filename)}</span>
                         ${statusHtml}
                     </div>`;
                 }).join('');
@@ -572,7 +598,7 @@
                     }
                     
                     return `<div style="${itemStyle}">
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;" title="${filename}">${filename}</span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;" title="${filename}">${formatFilenameToAmPm(filename)}</span>
                         ${statusHtml}
                     </div>`;
                 }).join('');
