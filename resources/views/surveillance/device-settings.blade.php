@@ -133,7 +133,7 @@
                     <div class="sv-sync-stats-grid">
                         <div class="sv-sync-stat-box">
                             <span class="sv-sync-stat-label">Timeout</span>
-                            <span class="sv-sync-stat-val" id="terminal-stat-time">10:00</span>
+                            <span class="sv-sync-stat-val" id="terminal-stat-time">60:00</span>
                         </div>
                         <div class="sv-sync-stat-box">
                             <span class="sv-sync-stat-label">Remote Port</span>
