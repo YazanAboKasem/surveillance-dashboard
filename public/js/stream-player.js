@@ -92,6 +92,17 @@
                 setLive(card, false);
             });
 
+            video.onplaying = () => {
+                hideOverlay(card);
+                setLive(card, true);
+            };
+            video.ontimeupdate = () => {
+                if (video.currentTime > 0) {
+                    hideOverlay(card);
+                    setLive(card, true);
+                }
+            };
+
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 hideOverlay(card);
                 setLive(card, true);
