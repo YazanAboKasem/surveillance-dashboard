@@ -66,7 +66,7 @@ return [
             'webrtc_port'     => env('JETSON1_WEBRTC_PORT', env('MEDIA_SERVER_WEBRTC_PORT', 8889)),
             'hls_base_url'    => env('JETSON1_HLS_URL', env('MEDIA_SERVER_HLS_URL')),
             'webrtc_base_url' => env('JETSON1_WEBRTC_URL', env('MEDIA_SERVER_WEBRTC_URL')),
-            'tunnel_cache_key' => 'surveillance_tunnel_hls_url',  // legacy key for backward compat
+            'tunnel_cache_key' => 'surveillance_tunnel_hls_url_rock1',
             'api_token'       => env('JETSON1_TOKEN', env('SURVEILLANCE_TOKEN')),
             'enabled'         => true,
             'cameras' => [

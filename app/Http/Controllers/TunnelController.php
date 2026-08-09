@@ -49,15 +49,21 @@ class TunnelController extends Controller
 
         // ── Store in cache ────────────────────────────────────────────────────
         $url = rtrim($url, '/');
-        Cache::put(self::CACHE_KEY, $url, self::CACHE_TTL);
+        $deviceId = $request->input('jetson_name') ?? $request->input('device_id') ?? 'jetson-1';
+        $devices = config('surveillance.devices', []);
+        $device = collect($devices)->firstWhere('id', $deviceId);
 
-        \Log::info('[Surveillance] Tunnel URL registered', ['url' => $url]);
+        $cacheKey = $device['tunnel_cache_key'] ?? "surveillance_tunnel_hls_url_{$deviceId}";
+        Cache::put($cacheKey, $url, self::CACHE_TTL);
+
+        \Log::info("[Surveillance] Tunnel URL registered for {$deviceId}", ['url' => $url, 'cache_key' => $cacheKey]);
 
         return response()->json([
             'success'    => true,
+            'device_id'  => $deviceId,
             'hls_url'    => $url,
             'expires_in' => self::CACHE_TTL,
-            'message'    => 'Tunnel URL registered. Dashboard will use it immediately.',
+            'message'    => "Tunnel URL registered for {$deviceId}. Dashboard will use it immediately.",
         ]);
     }
 
@@ -73,10 +79,15 @@ class TunnelController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        Cache::forget(self::CACHE_KEY);
-        \Log::info('[Surveillance] Tunnel URL cleared');
+        $deviceId = $request->input('jetson_name') ?? $request->input('device_id') ?? 'jetson-1';
+        $devices = config('surveillance.devices', []);
+        $device = collect($devices)->firstWhere('id', $deviceId);
 
-        return response()->json(['success' => true, 'message' => 'Tunnel URL cleared.']);
+        $cacheKey = $device['tunnel_cache_key'] ?? "surveillance_tunnel_hls_url_{$deviceId}";
+        Cache::forget($cacheKey);
+        \Log::info("[Surveillance] Tunnel URL cleared for {$deviceId}");
+
+        return response()->json(['success' => true, 'message' => "Tunnel URL cleared for {$deviceId}."]);
     }
 
     /**
