@@ -306,7 +306,17 @@ class CameraController extends Controller
 
     private function findCamera(string $id): ?array
     {
-        return collect(config('surveillance.cameras'))
-            ->firstWhere('id', $id);
+        $devices = config('surveillance.devices', []);
+        if (!empty($devices)) {
+            foreach ($devices as $d) {
+                foreach ($d['cameras'] ?? [] as $cam) {
+                    if ($cam['id'] === $id || "{$d['id']}-{$cam['id']}" === $id) {
+                        return $cam;
+                    }
+                }
+            }
+        }
+
+        return collect(config('surveillance.cameras', []))->firstWhere('id', $id);
     }
 }

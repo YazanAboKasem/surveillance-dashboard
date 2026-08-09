@@ -18,7 +18,9 @@
 @props(['camera'])
 
 @php
-    $id        = $camera['id'];
+    $rawId     = $camera['id'];
+    $deviceId  = $camera['device_id'] ?? '';
+    $id        = $deviceId ? "{$deviceId}-{$rawId}" : $rawId;
     $hasPtz    = $camera['ptz'] ?? false;
     $camIp     = $camera['ip'] ?? '';
     $hlsHd     = $camera['hls_url_hd']    ?? $camera['hls_url'];
@@ -37,7 +39,7 @@
             <i class="bi bi-camera-video sv-card-icon"></i>
             <div>
                 <div class="sv-card-title">{{ $camera['label'] }}</div>
-                <div class="sv-card-id">{{ $id }} · {{ $camIp ?: 'local' }}</div>
+                <div class="sv-card-id">{{ $rawId }} · {{ $camIp ?: 'local' }}</div>
             </div>
         </div>
 
