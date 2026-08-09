@@ -9,9 +9,9 @@ class JetsonWebSocketService
     /**
      * Check if Jetson is online.
      */
-    public function isOnline(): bool
+    public function isOnline(string $deviceId = 'jetson-1'): bool
     {
-        return (bool) Cache::get('jetson_ws_online', false);
+        return (bool) Cache::get("jetson_ws_online_{$deviceId}", false);
     }
 
     /**
@@ -30,30 +30,30 @@ class JetsonWebSocketService
     /**
      * Get Connection info (cameras, version, last heartbeat).
      */
-    public function getConnectionInfo(): array
+    public function getConnectionInfo(string $deviceId = 'jetson-1'): array
     {
         return [
-            'online' => $this->isOnline(),
-            'cameras' => Cache::get('jetson_ws_cameras', []),
-            'version' => Cache::get('jetson_ws_version', 'unknown'),
-            'last_heartbeat' => Cache::get('jetson_ws_last_heartbeat'),
+            'online' => $this->isOnline($deviceId),
+            'cameras' => Cache::get("jetson_ws_cameras_{$deviceId}", []),
+            'version' => Cache::get("jetson_ws_version_{$deviceId}", 'unknown'),
+            'last_heartbeat' => Cache::get("jetson_ws_last_heartbeat_{$deviceId}"),
         ];
     }
 
     /**
      * Mark Jetson as online (called from HTTP requests).
      */
-    public function markOnline(\Illuminate\Http\Request $request): void
+    public function markOnline(\Illuminate\Http\Request $request, string $deviceId = 'jetson-1'): void
     {
-        Cache::put('jetson_ws_online', true, 15); // short TTL for polling fallback
-        Cache::put('jetson_ws_last_heartbeat', now()->timestamp, 15);
+        Cache::put("jetson_ws_online_{$deviceId}", true, 15); // short TTL for polling fallback
+        Cache::put("jetson_ws_last_heartbeat_{$deviceId}", now()->timestamp, 15);
 
         if ($request->hasHeader('X-Cameras')) {
             $cameras = explode(',', $request->header('X-Cameras'));
-            Cache::put('jetson_ws_cameras', $cameras, 86400);
+            Cache::put("jetson_ws_cameras_{$deviceId}", $cameras, 86400);
         }
         if ($request->hasHeader('X-Version')) {
-            Cache::put('jetson_ws_version', $request->header('X-Version'), 86400);
+            Cache::put("jetson_ws_version_{$deviceId}", $request->header('X-Version'), 86400);
         }
     }
 
