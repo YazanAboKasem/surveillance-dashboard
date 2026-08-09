@@ -49,9 +49,20 @@ class MapController extends Controller
             if ($cachedGps) {
                 $cachedTime = $cachedGps['timestamp'] ?? 0;
                 $dbTime = $lastLocationAt ? $lastLocationAt->timestamp : 0;
-                if ($cachedTime > $dbTime) {
+                if ($cachedTime > $dbTime || $lat === null || $lng === null) {
                     $lat = $cachedGps['latitude'];
                     $lng = $cachedGps['longitude'];
+                    $lastLocationAt = \Carbon\Carbon::createFromTimestamp($cachedTime);
+                }
+            }
+
+            // Fallback to latest DeviceLocationLog if lat/lng are still empty
+            if (($lat === null || $lng === null || ($lat == 0 && $lng == 0))) {
+                $latestLog = DeviceLocationLog::where('device_id', $deviceId)->orderBy('recorded_at', 'desc')->first();
+                if ($latestLog) {
+                    $lat = $latestLog->latitude;
+                    $lng = $latestLog->longitude;
+                    $lastLocationAt = $latestLog->recorded_at;
                 }
             }
 
@@ -75,7 +86,7 @@ class MapController extends Controller
                     'latitude'  => $lat,
                     'longitude' => $lng,
                     'has_gps'   => ($lat !== null && $lng !== null && $lat != 0 && $lng != 0),
-                    'last_seen' => $agent && $agent->last_seen ? $agent->last_seen->timezone('Asia/Dubai')->format('Y-m-d H:i:s') : null,
+                    'last_seen' => $agent && $agent->last_seen ? $agent->last_seen->timezone('Asia/Dubai')->format('Y-m-d H:i:s') : ($lastLocationAt ? $lastLocationAt->timezone('Asia/Dubai')->format('Y-m-d H:i:s') : null),
                     'cpu'       => $agent->cpu ?? 0,
                     'ram'       => $agent->ram ?? 0,
                     'temperature' => $agent->temperature ?? 0,

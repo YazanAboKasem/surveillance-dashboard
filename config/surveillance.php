@@ -106,16 +106,16 @@ return [
             ],
         ],
         [
-            'id'              => 'jetson',
-            'name'            => 'jetson — Main Gate',
+            'id'              => 'jetson-1',
+            'name'            => 'Jetson — Main Gate',
             'location'        => 'Front Entrance',
-            'host'            => env('JETSON1_HOST', env('MEDIA_SERVER_HOST', '127.0.0.1')),
-            'hls_port'        => env('JETSON1_HLS_PORT', env('MEDIA_SERVER_HLS_PORT', 8888)),
-            'webrtc_port'     => env('JETSON1_WEBRTC_PORT', env('MEDIA_SERVER_WEBRTC_PORT', 8889)),
-            'hls_base_url'    => env('JETSON1_HLS_URL', env('MEDIA_SERVER_HLS_URL')),
-            'webrtc_base_url' => env('JETSON1_WEBRTC_URL', env('MEDIA_SERVER_WEBRTC_URL')),
-            'tunnel_cache_key' => 'surveillance_tunnel_hls_url',  // legacy key for backward compat
-            'api_token'       => env('JETSON1_TOKEN', env('SURVEILLANCE_TOKEN')),
+            'host'            => env('JETSON2_HOST', env('MEDIA_SERVER_HOST', '127.0.0.1')),
+            'hls_port'        => env('JETSON2_HLS_PORT', env('MEDIA_SERVER_HLS_PORT', 8888)),
+            'webrtc_port'     => env('JETSON2_WEBRTC_PORT', env('MEDIA_SERVER_WEBRTC_PORT', 8889)),
+            'hls_base_url'    => env('JETSON2_HLS_URL', env('MEDIA_SERVER_HLS_URL')),
+            'webrtc_base_url' => env('JETSON2_WEBRTC_URL', env('MEDIA_SERVER_WEBRTC_URL')),
+            'tunnel_cache_key' => 'surveillance_tunnel_hls_url_jetson1',
+            'api_token'       => env('JETSON2_TOKEN', env('SURVEILLANCE_TOKEN')),
             'enabled'         => true,
             'cameras' => [
                 [
