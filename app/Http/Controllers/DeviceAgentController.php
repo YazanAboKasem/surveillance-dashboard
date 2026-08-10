@@ -61,10 +61,12 @@ class DeviceAgentController extends Controller
             // Log location history
             DeviceLocationLog::create([
                 'device_id'   => $request->input('jetson_id'),
+                'session_id'  => $request->input('session_id'),
                 'latitude'    => $lat,
                 'longitude'   => $lng,
                 'recorded_at' => now(),
             ]);
+
         }
 
         $agent = DeviceAgent::updateOrCreate(
@@ -326,12 +328,14 @@ class DeviceAgentController extends Controller
         // Log to location history
         DeviceLocationLog::create([
             'device_id'   => $jetsonId,
+            'session_id'  => $request->input('session_id'),
             'latitude'    => $lat,
             'longitude'   => $lng,
             'speed'       => $request->input('speed'),
             'altitude'    => $request->input('altitude'),
             'recorded_at' => now(),
         ]);
+
 
         return response()->json(['success' => true]);
     }

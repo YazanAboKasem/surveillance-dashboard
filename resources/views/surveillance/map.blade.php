@@ -230,6 +230,41 @@
             margin-top: 8px;
         }
 
+        /* ── Trip Chips ──────────────────────────────────────── */
+        .sv-trip-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #cbd5e1;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .sv-trip-chip:hover {
+            background: rgba(14, 165, 233, 0.15);
+            border-color: rgba(14, 165, 233, 0.4);
+            color: #38bdf8;
+        }
+        .sv-trip-chip.active {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border-color: transparent;
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+        .sv-trip-chip .badge-meta {
+            font-size: 10px;
+            opacity: 0.85;
+            font-family: var(--font-mono, monospace);
+        }
+
+
         /* ── Auto-refresh indicator ──────────────────────────── */
         .sv-map-refresh-indicator {
             position: absolute;
@@ -312,8 +347,19 @@
                     </button>
                     <span class="sv-route-info" id="route-point-count"></span>
                 </div>
+
+                {{-- Trip Selector Bar --}}
+                <div id="route-trips-wrapper" style="margin-bottom: 12px; display: none;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="bi bi-signpost-split-fill" style="color:var(--accent)"></i> قائمة الرحلات / Trips:</span>
+                        <span id="route-trips-summary" style="font-family: var(--font-mono); font-size: 11px; color: #94a3b8;"></span>
+                    </div>
+                    <div id="route-trips-list" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;"></div>
+                </div>
+
                 <div id="route-modal-map" class="sv-route-modal-map"></div>
             </div>
+
             <div class="sv-modal-footer">
                 <button class="sv-btn sv-btn-secondary" onclick="document.getElementById('route-modal').classList.add('hidden')">Close</button>
             </div>

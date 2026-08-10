@@ -8,12 +8,14 @@ class DeviceLocationLog extends Model
 {
     protected $fillable = [
         'device_id',
+        'session_id',
         'latitude',
         'longitude',
         'speed',
         'altitude',
         'recorded_at',
     ];
+
 
     protected $casts = [
         'latitude'    => 'float',
