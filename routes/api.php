@@ -74,6 +74,9 @@ Route::post('/device-agent/terminal-ready',   [\App\Http\Controllers\DeviceAgent
 Route::post('/device-agent/terminal-closed',  [\App\Http\Controllers\DeviceAgentController::class, 'terminalClosed']);
 Route::post('/device-agent/gps-update',       [\App\Http\Controllers\DeviceAgentController::class, 'gpsUpdate']);
 
+// ── Device Live Stats (CPU / RAM / Temperature) for Test Mode panel ──────────
+Route::get('/surveillance/devices/{deviceId}/stats', [\App\Http\Controllers\DeviceAgentController::class, 'stats']);
+
 // ── Fleet Map API Endpoints ───────────────────────────────────────────────────
 Route::get('/surveillance/map/devices',           [\App\Http\Controllers\MapController::class, 'devicesGeoJson']);
 Route::get('/surveillance/map/route/{deviceId}',  [\App\Http\Controllers\MapController::class, 'deviceRoute']);

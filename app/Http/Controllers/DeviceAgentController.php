@@ -294,6 +294,28 @@ class DeviceAgentController extends Controller
     }
 
 
+    /**
+     * GET /api/surveillance/devices/{deviceId}/stats
+     * Polled by the dashboard (Test Mode panel) to show live CPU/RAM/temperature.
+     */
+    public function stats(string $deviceId): JsonResponse
+    {
+        $agent = DeviceAgent::where('jetson_id', $deviceId)->first();
+
+        if (!$agent) {
+            return response()->json(['online' => false]);
+        }
+
+        return response()->json([
+            'online' => $agent->online && $agent->last_seen && $agent->last_seen->diffInSeconds(now()) < 60,
+            'cpu' => $agent->cpu,
+            'ram' => $agent->ram,
+            'disk' => $agent->disk,
+            'temperature' => $agent->temperature,
+            'last_seen' => $agent->last_seen?->toIso8601String(),
+        ]);
+    }
+
     // ─── GPS Update Endpoint ────────────────────────────────────────────────
 
     /**
