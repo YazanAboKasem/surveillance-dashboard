@@ -9,7 +9,7 @@ class JetsonWebSocketService
     /**
      * Check if Jetson is online.
      */
-    public function isOnline(string $deviceId = 'jetson-1'): bool
+    public function isOnline(string $deviceId = 'rock1'): bool
     {
         return (bool) Cache::get("jetson_ws_online_{$deviceId}", false);
     }
@@ -30,7 +30,7 @@ class JetsonWebSocketService
     /**
      * Get Connection info (cameras, version, last heartbeat).
      */
-    public function getConnectionInfo(string $deviceId = 'jetson-1'): array
+    public function getConnectionInfo(string $deviceId = 'rock1'): array
     {
         return [
             'online' => $this->isOnline($deviceId),
@@ -43,7 +43,7 @@ class JetsonWebSocketService
     /**
      * Mark Jetson as online (called from HTTP requests).
      */
-    public function markOnline(\Illuminate\Http\Request $request, string $deviceId = 'jetson-1'): void
+    public function markOnline(\Illuminate\Http\Request $request, string $deviceId = 'rock1'): void
     {
         Cache::put("jetson_ws_online_{$deviceId}", true, 15); // short TTL for polling fallback
         Cache::put("jetson_ws_last_heartbeat_{$deviceId}", now()->timestamp, 15);
