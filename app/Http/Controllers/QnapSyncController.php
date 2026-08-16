@@ -19,8 +19,9 @@ class QnapSyncController extends Controller
     /**
      * POST /api/surveillance/sync/start
      *
-     * Tells the Jetson to start uploading recordings to this VPS via HTTP.
-     * No QNAP credentials needed — the Jetson uploads directly to Laravel API.
+     * Tells a specific device to start uploading its recordings to this
+     * VPS via HTTP. No QNAP credentials needed — the device uploads
+     * directly to the Laravel API.
      */
     public function start(Request $request): JsonResponse
     {
@@ -28,14 +29,8 @@ class QnapSyncController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        if (! $this->wsService->isOnline()) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Jetson is offline. Cannot start sync.'
-            ], 400);
-        }
-
         $request->validate([
+            'device_id' => 'required|string',
             'scope' => 'required|string|in:all,today,last_n_days,cameras',
             'cameras' => 'nullable|array',
             'days' => 'nullable|integer',
@@ -44,9 +39,18 @@ class QnapSyncController extends Controller
             'files' => 'nullable|array',
         ]);
 
+        $deviceId = $request->input('device_id');
+
+        if (! $this->wsService->isOnline($deviceId)) {
+            return response()->json([
+                'success' => false,
+                'error' => "Device {$deviceId} is offline. Cannot start sync."
+            ], 400);
+        }
+
         $requestId = 'sync_' . uniqid();
 
-        // Build VPS upload config — the Jetson will use this to upload files
+        // Build VPS upload config — the device will use this to upload files
         // Fall back to the request URL's scheme and host if app.url is localhost or empty
         $baseUrl = rtrim(config('app.url'), '/');
         if (str_contains($baseUrl, 'localhost') || empty($baseUrl)) {
@@ -67,13 +71,17 @@ class QnapSyncController extends Controller
             'files' => $request->input('files', []),
         ];
 
-        // Send sync start command via WS
-        $this->wsService->sendSyncStart($requestId, $vpsConfig, $options);
+        // Remember which device owns this sync request, so pause/resume/cancel
+        // (which only get the request id back from the browser) can be targeted.
+        Cache::put("sync_request_device_{$requestId}", $deviceId, 86400);
+
+        // Send sync start command via WS, targeted at this device only
+        $this->wsService->sendSyncStart($deviceId, $requestId, $vpsConfig, $options);
 
         return response()->json([
             'success' => true,
             'request_id' => $requestId,
-            'message' => 'Sync recordings command sent to Jetson.',
+            'message' => "Sync recordings command sent to {$deviceId}.",
         ]);
     }
 
@@ -108,7 +116,12 @@ class QnapSyncController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $this->wsService->sendEvent('sync.pause', ['request_id' => $requestId]);
+        $deviceId = $this->resolveSyncOwner($requestId);
+        if (! $deviceId) {
+            return response()->json(['error' => 'Unknown or expired sync request'], 404);
+        }
+
+        $this->wsService->sendEvent('sync.pause', $deviceId, ['request_id' => $requestId]);
 
         return response()->json([
             'success' => true,
@@ -125,7 +138,12 @@ class QnapSyncController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $this->wsService->sendEvent('sync.resume', ['request_id' => $requestId]);
+        $deviceId = $this->resolveSyncOwner($requestId);
+        if (! $deviceId) {
+            return response()->json(['error' => 'Unknown or expired sync request'], 404);
+        }
+
+        $this->wsService->sendEvent('sync.resume', $deviceId, ['request_id' => $requestId]);
 
         return response()->json([
             'success' => true,
@@ -142,7 +160,12 @@ class QnapSyncController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $this->wsService->sendEvent('sync.cancel', ['request_id' => $requestId]);
+        $deviceId = $this->resolveSyncOwner($requestId);
+        if (! $deviceId) {
+            return response()->json(['error' => 'Unknown or expired sync request'], 404);
+        }
+
+        $this->wsService->sendEvent('sync.cancel', $deviceId, ['request_id' => $requestId]);
 
         return response()->json([
             'success' => true,
@@ -153,7 +176,7 @@ class QnapSyncController extends Controller
     /**
      * POST /api/surveillance/sync/scan
      *
-     * Tells the Jetson to list files ready for sync based on filters.
+     * Tells a specific device to list files ready for sync based on filters.
      */
     public function scan(Request $request): JsonResponse
     {
@@ -161,18 +184,21 @@ class QnapSyncController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        if (! $this->wsService->isOnline()) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Jetson is offline. Cannot scan files.'
-            ], 400);
-        }
-
         $request->validate([
+            'device_id' => 'required|string',
             'scope' => 'required|string|in:all,today,last_n_days,cameras',
             'cameras' => 'nullable|array',
             'days' => 'nullable|integer',
         ]);
+
+        $deviceId = $request->input('device_id');
+
+        if (! $this->wsService->isOnline($deviceId)) {
+            return response()->json([
+                'success' => false,
+                'error' => "Device {$deviceId} is offline. Cannot scan files."
+            ], 400);
+        }
 
         $requestId = 'scan_' . uniqid();
         $options = [
@@ -181,7 +207,7 @@ class QnapSyncController extends Controller
             'days' => $request->input('days') ? (int) $request->input('days') : null,
         ];
 
-        $this->wsService->sendSyncListFiles($requestId, $options);
+        $this->wsService->sendSyncListFiles($deviceId, $requestId, $options);
 
         // Poll cache for response (up to 10.0 seconds)
         $response = $this->wsService->getEventResponse('sync.list_files.ack', $requestId, 10.0);
@@ -189,7 +215,7 @@ class QnapSyncController extends Controller
         if (!$response) {
             return response()->json([
                 'success' => false,
-                'error' => 'Timeout waiting for Jetson response.'
+                'error' => 'Timeout waiting for device response.'
             ], 408);
         }
 
@@ -197,6 +223,14 @@ class QnapSyncController extends Controller
             'success' => true,
             'files' => $response['files'] ?? [],
         ]);
+    }
+
+    /**
+     * Look up which device owns a given sync request id.
+     */
+    private function resolveSyncOwner(string $requestId): ?string
+    {
+        return Cache::get("sync_request_device_{$requestId}");
     }
 
     /**

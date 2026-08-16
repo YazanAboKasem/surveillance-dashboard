@@ -65,25 +65,38 @@ class StreamQualityController extends Controller
             . "{$settings['width']}x{$settings['height']} "
             . "@{$settings['fps']}fps @{$settings['bitrate']}Kbps");
 
-        // Send via WebSocket instantly
+        // Send via WebSocket instantly — only if we can tell which device
+        // owns this camera (composite "device-camera" id). Superseded by
+        // CameraController::updateSettings for the current dashboard UI;
+        // kept for API compatibility.
         try {
-            $camerasConfig = config('surveillance.cameras', []);
-            $allSettings = [];
-            foreach ($camerasConfig as $cam) {
-                if (! ($cam['enabled'] ?? false)) {
-                    continue;
+            $deviceId = null;
+            foreach (config('surveillance.devices', []) as $d) {
+                if (str_starts_with($cameraId, "{$d['id']}-")) {
+                    $deviceId = $d['id'];
+                    break;
                 }
-                $id = $cam['id'];
-                $camSettings = ($id === $cameraId) ? $settings : Cache::get("camera_settings_{$id}");
-                $allSettings[$id] = [
-                    'quality' => $camSettings['quality'] ?? 'hd',
-                    'fps'     => (int) ($camSettings['fps'] ?? 15),
-                ];
             }
 
-            $wsService = app(\App\Services\JetsonWebSocketService::class);
-            $wsService->sendSettingsUpdate($allSettings);
-            \Log::info('[StreamQuality] Settings update pushed via WebSocket', $allSettings);
+            if ($deviceId) {
+                $camerasConfig = config('surveillance.cameras', []);
+                $allSettings = [];
+                foreach ($camerasConfig as $cam) {
+                    if (! ($cam['enabled'] ?? false)) {
+                        continue;
+                    }
+                    $id = $cam['id'];
+                    $camSettings = ($id === $cameraId) ? $settings : Cache::get("camera_settings_{$id}");
+                    $allSettings[$id] = [
+                        'quality' => $camSettings['quality'] ?? 'hd',
+                        'fps'     => (int) ($camSettings['fps'] ?? 15),
+                    ];
+                }
+
+                $wsService = app(\App\Services\JetsonWebSocketService::class);
+                $wsService->sendSettingsUpdate($deviceId, $allSettings);
+                \Log::info('[StreamQuality] Settings update pushed via WebSocket', ['device_id' => $deviceId] + $allSettings);
+            }
         } catch (\Exception $e) {
             \Log::error('[StreamQuality] Failed to push settings via WebSocket: ' . $e->getMessage());
         }

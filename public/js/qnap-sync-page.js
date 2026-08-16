@@ -108,6 +108,7 @@
         const days = scope === 'last_n_days' ? parseInt(document.getElementById('sync-days').value, 10) : null;
 
         const payload = {
+            device_id: window.CURRENT_DEVICE_ID,
             scope: scope,
             cameras: scope === 'cameras' ? selectedCams : [],
             days: days
@@ -287,6 +288,7 @@
         const days = scope === 'last_n_days' ? parseInt(document.getElementById('sync-days').value, 10) : null;
         
         const payload = {
+            device_id: window.CURRENT_DEVICE_ID,
             scope: scope,
             cameras: scope === 'cameras' ? selectedCams : [],
             days: days,

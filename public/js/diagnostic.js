@@ -27,9 +27,11 @@
      * Poll Jetson WebSocket Status and update topbar indicator
      */
     window.updateJetsonStatus = function() {
+        const deviceId = document.getElementById('sv-diagnostic-panel')?.dataset.deviceId;
+        if (!deviceId) return; // not on a single-device page — nothing to poll
         const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
-        
-        fetch('/api/surveillance/jetson/status', {
+
+        fetch(`/api/surveillance/jetson/status?device_id=${encodeURIComponent(deviceId)}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -73,7 +75,12 @@
      * Reboot Jetson via Laravel WS API
      */
     window.rebootJetson = function() {
-        if (!confirm('Are you sure you want to reboot the Jetson system? This will interrupt the live streams for a couple of minutes.')) {
+        const deviceId = document.getElementById('sv-diagnostic-panel')?.dataset.deviceId;
+        if (!deviceId) {
+            alert('Cannot determine which device to reboot.');
+            return;
+        }
+        if (!confirm(`Are you sure you want to reboot ${deviceId}? This will interrupt its live streams for a couple of minutes.`)) {
             return;
         }
 
@@ -92,7 +99,8 @@
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
                 'X-CSRF-TOKEN': csrf
-            }
+            },
+            body: JSON.stringify({ device_id: deviceId })
         })
         .then(r => {
             if (!r.ok) return r.json().then(err => { throw new Error(err.error || 'Reboot request failed') });
@@ -241,8 +249,14 @@
      * Start Diagnostic Checks
      */
     window.startDiagnostics = function () {
+        const deviceId = document.getElementById('sv-diagnostic-panel')?.dataset.deviceId;
         const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+        if (!deviceId) {
+            showDiagnosticError('Cannot determine which device to diagnose.');
+            return;
+        }
 
         stopDiagnosticPolling();
         resetDiagnosticUI();
@@ -253,7 +267,8 @@
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
                 'X-CSRF-TOKEN': csrf
-            }
+            },
+            body: JSON.stringify({ device_id: deviceId })
         })
         .then(r => {
             if (!r.ok) return r.json().then(err => { throw new Error(err.error || 'Diagnostic trigger failed') });
@@ -407,9 +422,10 @@
      */
     function pollDiagnosticStatus() {
         if (!currentRequestId) return;
+        const deviceId = document.getElementById('sv-diagnostic-panel')?.dataset.deviceId || '';
         const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
 
-        fetch(`/api/surveillance/diagnostic/status/${currentRequestId}`, {
+        fetch(`/api/surveillance/diagnostic/status/${currentRequestId}?device_id=${encodeURIComponent(deviceId)}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
