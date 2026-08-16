@@ -133,20 +133,57 @@
             return r.json();
         })
         .then(data => {
-            if (data.success) {
-                renderScannedFiles(data.files);
+            if (data.success && data.request_id) {
+                pollScanStatus(data.request_id, indicator);
+            } else {
+                throw new Error(data.error || 'Scan failed to start');
             }
         })
         .catch(err => {
             console.error('[Sync Scan] Error:', err);
-            // Hide files list if scan failed
             document.getElementById('scanned-files-card').classList.add('hidden');
-        })
-        .finally(() => {
-            if (indicator) {
-                indicator.classList.add('hidden');
-            }
+            if (indicator) indicator.classList.add('hidden');
         });
+    }
+
+    /**
+     * Poll for scan completion — file scanning (ffprobe per file) can take
+     * much longer than a single request should block for, so the backend
+     * returns immediately and we poll until it's done.
+     */
+    function pollScanStatus(requestId, indicator) {
+        const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
+        const startedAt = Date.now();
+        const MAX_WAIT_MS = 180000; // 3 minutes — large recording folders can take a while
+
+        const tick = () => {
+            fetch(`/api/surveillance/sync/scan/status/${requestId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.done) {
+                    if (Date.now() - startedAt > MAX_WAIT_MS) {
+                        throw new Error('Timed out waiting for the device to finish scanning.');
+                    }
+                    setTimeout(tick, 1500);
+                    return;
+                }
+                if (indicator) indicator.classList.add('hidden');
+                if (data.success) {
+                    renderScannedFiles(data.files);
+                } else {
+                    throw new Error(data.error || 'Scan failed on device.');
+                }
+            })
+            .catch(err => {
+                console.error('[Sync Scan] Error:', err);
+                document.getElementById('scanned-files-card').classList.add('hidden');
+                if (indicator) indicator.classList.add('hidden');
+            });
+        };
+
+        tick();
     }
 
     /**

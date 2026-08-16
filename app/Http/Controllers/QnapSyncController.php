@@ -209,17 +209,42 @@ class QnapSyncController extends Controller
 
         $this->wsService->sendSyncListFiles($deviceId, $requestId, $options);
 
-        // Poll cache for response (up to 10.0 seconds)
-        $response = $this->wsService->getEventResponse('sync.list_files.ack', $requestId, 10.0);
+        // Scanning can take much longer than a single HTTP request should
+        // block for (ffprobe-ing thousands of recording files) — return
+        // immediately and let the browser poll /sync/scan/status instead.
+        return response()->json([
+            'success' => true,
+            'request_id' => $requestId,
+        ]);
+    }
 
-        if (!$response) {
+    /**
+     * GET /api/surveillance/sync/scan/status/{requestId}
+     *
+     * Polled by the browser while a scan (started via /sync/scan) is running.
+     */
+    public function scanStatus(Request $request, string $requestId): JsonResponse
+    {
+        if (! $this->isAuthorized($request)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $response = Cache::get("ws_response_sync.list_files.ack_{$requestId}");
+
+        if ($response === null) {
+            return response()->json(['done' => false]);
+        }
+
+        if (($response['status'] ?? 'success') === 'error') {
             return response()->json([
+                'done' => true,
                 'success' => false,
-                'error' => 'Timeout waiting for device response.'
-            ], 408);
+                'error' => $response['error'] ?? 'Scan failed on device.',
+            ]);
         }
 
         return response()->json([
+            'done' => true,
             'success' => true,
             'files' => $response['files'] ?? [],
         ]);
