@@ -79,8 +79,12 @@ Route::post('/device-agent/gps-update',       [\App\Http\Controllers\DeviceAgent
 Route::get('/surveillance/devices/{deviceId}/stats', [\App\Http\Controllers\DeviceAgentController::class, 'stats']);
 
 // ── Device Registry (discovery + registration) ────────────────────────────────
+// NOTE: /pending must stay registered before the bare {deviceId} route below,
+// otherwise it would be swallowed as a literal device id.
 Route::get('/surveillance/devices/pending',                [\App\Http\Controllers\DeviceController::class, 'pending']);
 Route::post('/surveillance/devices/{deviceId}/register',   [\App\Http\Controllers\DeviceController::class, 'register']);
+Route::put('/surveillance/devices/{deviceId}',              [\App\Http\Controllers\DeviceController::class, 'update']);
+Route::get('/surveillance/devices/{deviceId}',              [\App\Http\Controllers\DeviceController::class, 'show']);
 
 // ── Fleet Map API Endpoints ───────────────────────────────────────────────────
 Route::get('/surveillance/map/devices',           [\App\Http\Controllers\MapController::class, 'devicesGeoJson']);

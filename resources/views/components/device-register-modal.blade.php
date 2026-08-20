@@ -2,8 +2,8 @@
     <div class="sv-modal-card">
         <div class="sv-modal-header">
             <h3 class="sv-modal-title">
-                <i class="bi bi-plus-circle-fill" style="color:var(--accent)"></i>
-                Register Device — <span id="register-modal-device-id" class="mono"></span>
+                <i id="register-modal-icon" class="bi bi-plus-circle-fill" style="color:var(--accent)"></i>
+                <span id="register-modal-title-text">Register Device</span> — <span id="register-modal-device-id" class="mono"></span>
             </h3>
             <button class="sv-modal-close" onclick="closeDeviceRegisterModal()">&times;</button>
         </div>
@@ -13,7 +13,7 @@
                 <div class="sv-form-group" style="background:var(--surface-2);border-radius:8px;padding:12px 16px;border:1px solid var(--border);margin-bottom:16px">
                     <div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:0.85rem">
                         <i class="bi bi-info-circle-fill" style="color:var(--accent)"></i>
-                        <span>This device connected on its own with a unique auto-generated id. Give it a name and its camera details to finish setup — no file edits needed.</span>
+                        <span id="register-modal-hint">This device connected on its own with a unique auto-generated id. Give it a name and its camera details to finish setup — no file edits needed.</span>
                     </div>
                 </div>
 
@@ -53,7 +53,7 @@
                 <div class="sv-modal-error hidden" id="device-register-error-msg"></div>
                 <button type="button" class="sv-btn sv-btn-secondary" onclick="closeDeviceRegisterModal()">Cancel</button>
                 <button type="submit" class="sv-btn sv-btn-accent">
-                    <i class="bi bi-check-circle-fill"></i> Register Device
+                    <i class="bi bi-check-circle-fill"></i> <span id="register-modal-submit-text">Register Device</span>
                 </button>
             </div>
         </form>

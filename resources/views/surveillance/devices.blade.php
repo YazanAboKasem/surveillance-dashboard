@@ -75,11 +75,17 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('surveillance.device-settings', $device['id']) }}"
-                       class="sv-btn sv-btn-secondary sv-device-settings-btn">
-                        <i class="bi bi-gear-fill"></i>
-                        Settings
-                    </a>
+                    <div style="display:flex;gap:8px">
+                        <button class="sv-btn sv-btn-secondary" onclick="openDeviceEditModal('{{ $device['id'] }}')">
+                            <i class="bi bi-pencil-fill"></i>
+                            Edit
+                        </button>
+                        <a href="{{ route('surveillance.device-settings', $device['id']) }}"
+                           class="sv-btn sv-btn-secondary sv-device-settings-btn">
+                            <i class="bi bi-gear-fill"></i>
+                            Settings
+                        </a>
+                    </div>
                 </div>
 
                 {{-- Device Details (expandable) --}}
