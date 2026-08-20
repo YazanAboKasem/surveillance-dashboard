@@ -483,7 +483,10 @@
         }
         document.getElementById('sync-stat-eta').textContent = etaText;
 
-        document.getElementById('sync-current-file').textContent = p.current_file || 'None';
+        const isCompressing = p.stage === 'compressing';
+        document.getElementById('sync-current-file').textContent = p.current_file
+            ? (isCompressing ? `${p.current_file} — compressing to 1080p…` : p.current_file)
+            : 'None';
 
         // Update scroll container with file queue status
         if (filesList && filesList.length > 0) {
@@ -491,17 +494,20 @@
             if (scrollContainer) {
                 const currentFile = p.current_file;
                 const currentIndex = filesList.indexOf(currentFile);
-                
+
                 // Get the list of failed file names
                 const failedFileNames = (p.failed_files || []).map(ff => ff.file);
-                
+
                 scrollContainer.innerHTML = filesList.map((filename, idx) => {
                     let statusHtml = '';
                     let itemStyle = 'display:flex; justify-content:space-between; align-items:center; padding: 4px 8px; border-radius: 4px;';
-                    
+
                     if (failedFileNames.includes(filename)) {
                         statusHtml = `<span style="color:var(--red); font-weight:bold;"><i class="bi bi-x-circle-fill"></i> Failed</span>`;
                         itemStyle += 'background: rgba(239, 83, 80, 0.1); border: 1px solid rgba(239, 83, 80, 0.2);';
+                    } else if (filename === currentFile && isCompressing) {
+                        statusHtml = `<span style="color:var(--amber); font-weight:bold;"><i class="bi bi-gear-fill" style="display:inline-block; animation:sv-spin 1.5s linear infinite;"></i> Compressing...</span>`;
+                        itemStyle += 'background: rgba(255, 171, 64, 0.15); border: 1px solid rgba(255, 171, 64, 0.3);';
                     } else if (filename === currentFile) {
                         statusHtml = `<span style="color:var(--accent); font-weight:bold;"><i class="bi bi-arrow-repeat" style="display:inline-block; animation:sv-spin 1s linear infinite;"></i> Syncing...</span>`;
                         itemStyle += 'background: rgba(255, 171, 64, 0.1); border: 1px solid rgba(255, 171, 64, 0.2);';
