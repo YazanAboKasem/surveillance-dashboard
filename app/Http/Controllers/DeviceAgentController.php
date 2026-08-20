@@ -6,12 +6,17 @@ use App\Models\DeviceAgent;
 use App\Models\DeviceAgentCommand;
 use App\Models\DeviceLocationLog;
 use App\Models\DeviceTerminalSession;
+use App\Services\DeviceRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class DeviceAgentController extends Controller
 {
+    public function __construct(private DeviceRegistry $deviceRegistry)
+    {
+    }
+
     // ─── Agent API Endpoints (called by Python agent) ──────────────────────────
 
     /**
@@ -73,6 +78,14 @@ class DeviceAgentController extends Controller
             ['jetson_id' => $request->input('jetson_id')],
             $updateData
         );
+
+        // Discovery: an unregistered device heartbeating in gets recorded
+        // as `pending` so it shows up on the dashboard for registration.
+        try {
+            $this->deviceRegistry->seen($request->input('jetson_id'), $request->input('hostname'));
+        } catch (\Exception $e) {
+            \Log::error('[DeviceAgent] Failed to record device seen: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,

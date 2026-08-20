@@ -1101,6 +1101,11 @@ body::before {
     border-left: 3px solid var(--red);
 }
 
+.sv-device-card.pending {
+    border-left: 3px solid var(--amber);
+    border-style: dashed;
+}
+
 .sv-device-card-header {
     display: flex;
     align-items: center;

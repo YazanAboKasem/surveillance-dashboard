@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DeviceRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -24,6 +25,10 @@ class CameraController extends Controller
     const TOKEN_CACHE_KEY = 'surveillance_tunnel_hls_url'; // reuse TunnelController constant
     const CMD_QUEUE_TTL = 60 * 5;  // 5 minutes
     const STATUS_TTL = 60 * 60; // 1 hour
+
+    public function __construct(private DeviceRegistry $deviceRegistry)
+    {
+    }
 
     // ── PTZ Actions ──────────────────────────────────────────────────────────
     const VALID_ACTIONS = [
@@ -235,7 +240,7 @@ class CameraController extends Controller
         try {
             [$deviceId, $rawCameraId] = $this->resolveDeviceAndRawId($cameraId);
             if ($deviceId) {
-                $device = collect(config('surveillance.devices', []))->firstWhere('id', $deviceId);
+                $device = $this->deviceRegistry->find($deviceId);
                 $allSettings = [];
                 foreach ($device['cameras'] ?? [] as $cam) {
                     $id = $cam['id'];
@@ -322,7 +327,7 @@ class CameraController extends Controller
      */
     private function resolveDeviceAndRawId(string $id): array
     {
-        $devices = config('surveillance.devices', []);
+        $devices = $this->deviceRegistry->registeredDevices();
         foreach ($devices as $d) {
             foreach ($d['cameras'] ?? [] as $cam) {
                 if ("{$d['id']}-{$cam['id']}" === $id) {
@@ -336,7 +341,7 @@ class CameraController extends Controller
 
     private function findCamera(string $id): ?array
     {
-        $devices = config('surveillance.devices', []);
+        $devices = $this->deviceRegistry->registeredDevices();
         if (!empty($devices)) {
             foreach ($devices as $d) {
                 foreach ($d['cameras'] ?? [] as $cam) {

@@ -61,7 +61,7 @@
                         <i class="bi bi-cpu-fill"></i>
                         <span>Devices</span>
                         @php
-                            $deviceCount = count(collect(config('surveillance.devices', []))->where('enabled', true));
+                            $deviceCount = app(\App\Services\DeviceRegistry::class)->registeredDevices()->count();
                         @endphp
                         <span class="sv-nav-badge">{{ $deviceCount }}</span>
                     </a>
@@ -144,7 +144,7 @@
                         SYSTEM ONLINE
                     </div>
                     @php
-                        $allDevices = collect(config('surveillance.devices', []))->where('enabled', true);
+                        $allDevices = app(\App\Services\DeviceRegistry::class)->registeredDevices();
                     @endphp
                     @foreach($allDevices as $dev)
                     <div class="sv-status-pill offline" id="jetson-status-pill-{{ $dev['id'] }}">

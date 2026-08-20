@@ -2,6 +2,7 @@
 
 namespace App\WebSocket;
 
+use App\Services\DeviceRegistry;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -9,10 +10,15 @@ class JetsonWebSocketHandler
 {
     private $connections = [];
     private $token;
+    private DeviceRegistry $deviceRegistry;
 
-    public function __construct()
+    public function __construct(?DeviceRegistry $deviceRegistry = null)
     {
         $this->token = config('surveillance.api_token');
+        // Not resolved via the container (this class is `new`'d directly
+        // inside the long-running WebSocketServeCommand event loop), so
+        // accept it as an optional constructor arg with a manual fallback.
+        $this->deviceRegistry = $deviceRegistry ?? app(DeviceRegistry::class);
     }
 
     /**
@@ -264,7 +270,9 @@ class JetsonWebSocketHandler
 
         switch ($event) {
             case 'jetson.hello':
-                $deviceId = $data['jetson_name'] ?? 'jetson-1';
+                // Prefer the new 'server_id' field; fall back to the legacy
+                // 'jetson_name' so devices that haven't upgraded yet still work.
+                $deviceId = $data['server_id'] ?? $data['jetson_name'] ?? 'jetson-1';
                 if (isset($this->connections[$connId])) {
                     $this->connections[$connId]['device_id'] = $deviceId;
                 }
@@ -272,8 +280,17 @@ class JetsonWebSocketHandler
                 Cache::put("jetson_ws_cameras_{$deviceId}", $data['cameras'] ?? [], 86400);
                 Cache::put("jetson_ws_version_{$deviceId}", $data['version'] ?? 'unknown', 86400);
                 Cache::put("jetson_ws_last_heartbeat_{$deviceId}", now()->timestamp, 86400);
-                Log::info("[WebSocket] Jetson {$deviceId} logged in.", $data);
+                Log::info("[WebSocket] Device {$deviceId} logged in.", $data);
                 $this->recordStartup($deviceId);
+
+                // Discovery: unknown ids get recorded as `pending` so they
+                // show up on the dashboard for registration instead of
+                // connecting invisibly.
+                try {
+                    $this->deviceRegistry->seen($deviceId);
+                } catch (\Exception $e) {
+                    Log::error("[WebSocket] Failed to record device seen for {$deviceId}: " . $e->getMessage());
+                }
                 break;
 
             case 'heartbeat':

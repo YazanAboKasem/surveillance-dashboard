@@ -78,6 +78,10 @@ Route::post('/device-agent/gps-update',       [\App\Http\Controllers\DeviceAgent
 // ── Device Live Stats (CPU / RAM / Temperature) for Test Mode panel ──────────
 Route::get('/surveillance/devices/{deviceId}/stats', [\App\Http\Controllers\DeviceAgentController::class, 'stats']);
 
+// ── Device Registry (discovery + registration) ────────────────────────────────
+Route::get('/surveillance/devices/pending',                [\App\Http\Controllers\DeviceController::class, 'pending']);
+Route::post('/surveillance/devices/{deviceId}/register',   [\App\Http\Controllers\DeviceController::class, 'register']);
+
 // ── Fleet Map API Endpoints ───────────────────────────────────────────────────
 Route::get('/surveillance/map/devices',           [\App\Http\Controllers\MapController::class, 'devicesGeoJson']);
 Route::get('/surveillance/map/route/{deviceId}',  [\App\Http\Controllers\MapController::class, 'deviceRoute']);

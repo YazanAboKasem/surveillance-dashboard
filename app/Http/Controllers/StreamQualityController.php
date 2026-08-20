@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DeviceRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -21,6 +22,10 @@ use Illuminate\Support\Facades\Cache;
  */
 class StreamQualityController extends Controller
 {
+    public function __construct(private DeviceRegistry $deviceRegistry)
+    {
+    }
+
     /** Quality presets — browser sends preset name, Python applies it */
     const PRESETS = [
         'hd'    => ['width' => 1920, 'height' => 1080, 'fps' => 25, 'bitrate' => 4000],
@@ -71,7 +76,7 @@ class StreamQualityController extends Controller
         // kept for API compatibility.
         try {
             $deviceId = null;
-            foreach (config('surveillance.devices', []) as $d) {
+            foreach ($this->deviceRegistry->registeredDevices() as $d) {
                 if (str_starts_with($cameraId, "{$d['id']}-")) {
                     $deviceId = $d['id'];
                     break;

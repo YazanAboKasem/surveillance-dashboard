@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DeviceRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -21,6 +22,10 @@ class TunnelController extends Controller
     /** Cache TTL — 24 hours. Tunnel re-registers on each start. */
     const CACHE_TTL = 60 * 60 * 24;
 
+    public function __construct(private DeviceRegistry $deviceRegistry)
+    {
+    }
+
     /**
      * POST /api/surveillance/register-tunnel
      *
@@ -38,6 +43,7 @@ class TunnelController extends Controller
 
         // ── Validate ──────────────────────────────────────────────────────────
         $url = trim($request->input('hls_url', ''));
+        $jetsonName = trim($request->input('jetson_name', ''));
 
         if (empty($url)) {
             return response()->json(['error' => 'hls_url is required'], 422);
@@ -49,21 +55,41 @@ class TunnelController extends Controller
 
         // ── Store in cache ────────────────────────────────────────────────────
         $url = rtrim($url, '/');
-        $deviceId = $request->input('jetson_name') ?? $request->input('device_id') ?? 'jetson-1';
-        $devices = config('surveillance.devices', []);
-        $device = collect($devices)->firstWhere('id', $deviceId);
 
-        $cacheKey = $device['tunnel_cache_key'] ?? "surveillance_tunnel_hls_url_{$deviceId}";
+        // Per-device cache key: look up the device's tunnel_cache_key from config
+        $cacheKey = self::CACHE_KEY; // legacy fallback
+        if (!empty($jetsonName)) {
+            $devices = $this->deviceRegistry->registeredDevices();
+            foreach ($devices as $device) {
+                if (($device['id'] ?? '') === $jetsonName) {
+                    $cacheKey = $device['tunnel_cache_key'] ?? "surveillance_tunnel_{$jetsonName}";
+                    break;
+                }
+            }
+            // If device not found in config, use a standardized key
+            if ($cacheKey === self::CACHE_KEY) {
+                $cacheKey = "surveillance_tunnel_{$jetsonName}";
+            }
+        }
+
         Cache::put($cacheKey, $url, self::CACHE_TTL);
 
-        \Log::info("[Surveillance] Tunnel URL registered for {$deviceId}", ['url' => $url, 'cache_key' => $cacheKey]);
+        // Also update legacy key for backward compatibility (last registered wins)
+        Cache::put(self::CACHE_KEY, $url, self::CACHE_TTL);
+
+        \Log::info('[Surveillance] Tunnel URL registered', [
+            'url' => $url,
+            'jetson_name' => $jetsonName ?: '(not provided)',
+            'cache_key' => $cacheKey,
+        ]);
 
         return response()->json([
-            'success'    => true,
-            'device_id'  => $deviceId,
-            'hls_url'    => $url,
-            'expires_in' => self::CACHE_TTL,
-            'message'    => "Tunnel URL registered for {$deviceId}. Dashboard will use it immediately.",
+            'success'     => true,
+            'hls_url'     => $url,
+            'jetson_name' => $jetsonName ?: null,
+            'cache_key'   => $cacheKey,
+            'expires_in'  => self::CACHE_TTL,
+            'message'     => 'Tunnel URL registered. Dashboard will use it immediately.',
         ]);
     }
 
@@ -79,15 +105,10 @@ class TunnelController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $deviceId = $request->input('jetson_name') ?? $request->input('device_id') ?? 'jetson-1';
-        $devices = config('surveillance.devices', []);
-        $device = collect($devices)->firstWhere('id', $deviceId);
+        Cache::forget(self::CACHE_KEY);
+        \Log::info('[Surveillance] Tunnel URL cleared');
 
-        $cacheKey = $device['tunnel_cache_key'] ?? "surveillance_tunnel_hls_url_{$deviceId}";
-        Cache::forget($cacheKey);
-        \Log::info("[Surveillance] Tunnel URL cleared for {$deviceId}");
-
-        return response()->json(['success' => true, 'message' => "Tunnel URL cleared for {$deviceId}."]);
+        return response()->json(['success' => true, 'message' => 'Tunnel URL cleared.']);
     }
 
     /**

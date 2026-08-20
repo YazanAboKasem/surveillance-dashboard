@@ -3,11 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\TunnelController;
+use App\Services\DeviceRegistry;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class SurveillanceController extends Controller
 {
+    public function __construct(private DeviceRegistry $deviceRegistry)
+    {
+    }
+
     /**
      * Display the live surveillance dashboard (monitoring room).
      * Shows ALL cameras from ALL enabled devices, grouped by device.
@@ -25,8 +30,9 @@ class SurveillanceController extends Controller
     public function devices(): View
     {
         $devices = $this->resolveAllDevices();
+        $pendingDevices = $this->deviceRegistry->pendingDevices();
 
-        return view('surveillance.devices', compact('devices'));
+        return view('surveillance.devices', compact('devices', 'pendingDevices'));
     }
 
     /**
@@ -79,16 +85,17 @@ class SurveillanceController extends Controller
      */
     private function resolveAllDevices()
     {
-        $deviceConfigs = config('surveillance.devices', []);
+        $deviceConfigs = $this->deviceRegistry->registeredDevices()->all();
 
-        // Backward compatibility: if no devices, wrap legacy cameras as single device
+        // Backward compatibility: if no devices are registered yet, wrap
+        // the legacy flat camera list as a single default device.
         if (empty($deviceConfigs)) {
             $legacyCameras = config('surveillance.cameras', []);
             if (!empty($legacyCameras)) {
                 $server = config('surveillance.media_server');
                 $deviceConfigs = [[
-                    'id'              => 'jetson-default',
-                    'name'            => 'Jetson (Default)',
+                    'id'              => 'server-default',
+                    'name'            => 'Server (Default)',
                     'location'        => 'Default',
                     'host'            => $server['host'],
                     'hls_port'        => $server['hls_port'],

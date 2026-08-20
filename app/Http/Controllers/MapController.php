@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DeviceAgent;
 use App\Models\DeviceLocationLog;
+use App\Services\DeviceRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -11,14 +12,17 @@ use Illuminate\View\View;
 
 class MapController extends Controller
 {
+    public function __construct(private DeviceRegistry $deviceRegistry)
+    {
+    }
+
     /**
      * GET /surveillance/map
      * Display the fleet map page.
      */
     public function index(): View
     {
-        $deviceConfigs = config('surveillance.devices', []);
-        $devices = collect($deviceConfigs)->where('enabled', true)->values();
+        $devices = $this->deviceRegistry->registeredDevices();
 
         return view('surveillance.map', compact('devices'));
     }
@@ -29,8 +33,7 @@ class MapController extends Controller
      */
     public function devicesGeoJson(): JsonResponse
     {
-        $deviceConfigs = config('surveillance.devices', []);
-        $enabledDevices = collect($deviceConfigs)->where('enabled', true);
+        $enabledDevices = $this->deviceRegistry->registeredDevices();
 
         $features = [];
 
