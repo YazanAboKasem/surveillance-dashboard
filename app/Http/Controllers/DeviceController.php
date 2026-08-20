@@ -84,7 +84,7 @@ class DeviceController extends Controller
         $device->update([
             'name' => $validated['name'],
             'location' => $validated['location'] ?? null,
-            'host' => $validated['host'] ?: config('surveillance.media_server.host'),
+            'host' => $validated['host'] ?? config('surveillance.media_server.host'),
             'hls_port' => $validated['hls_port'] ?? 8888,
             'webrtc_port' => $validated['webrtc_port'] ?? 8889,
             'tunnel_cache_key' => "surveillance_tunnel_hls_url_{$device->device_id}",
@@ -200,7 +200,7 @@ class DeviceController extends Controller
         $device->update([
             'name' => $validated['name'],
             'location' => $validated['location'] ?? null,
-            'host' => $validated['host'] ?: $device->host,
+            'host' => $validated['host'] ?? $device->host,
             'hls_port' => $validated['hls_port'] ?? $device->hls_port,
             'webrtc_port' => $validated['webrtc_port'] ?? $device->webrtc_port,
         ]);
