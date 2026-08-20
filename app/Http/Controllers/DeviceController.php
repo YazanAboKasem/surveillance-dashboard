@@ -278,6 +278,34 @@ class DeviceController extends Controller
         ]);
     }
 
+    /**
+     * DELETE /api/surveillance/devices/{deviceId}
+     *
+     * Removes a device (and its cameras, cascade) from the registry
+     * entirely — e.g. to clear out old seeded/test devices. This does not
+     * touch anything on the physical device itself; if it's still running
+     * and connected, it will just show back up under "Discovered Devices"
+     * on its next heartbeat/hello.
+     */
+    public function destroy(Request $request, string $deviceId): JsonResponse
+    {
+        if (! $this->isAuthorized($request)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $device = Device::where('device_id', $deviceId)->first();
+        if (! $device) {
+            return response()->json(['error' => "Device {$deviceId} not found"], 404);
+        }
+
+        $device->delete(); // cascades to device_cameras
+
+        return response()->json([
+            'success' => true,
+            'message' => "Device {$deviceId} deleted.",
+        ]);
+    }
+
     private function isAuthorized(Request $request): bool
     {
         $token = config('surveillance.api_token');

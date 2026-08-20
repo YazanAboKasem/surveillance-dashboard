@@ -9,6 +9,34 @@
     let cameraRowCount = 0;
     let pendingPollInterval = null;
 
+    // ─── Delete device ────────────────────────────────────────────────────────
+    window.deleteDevice = function (deviceId, deviceName) {
+        if (!confirm(`Delete "${deviceName}" (${deviceId})? This removes it and its cameras from the dashboard. The physical device itself is not affected — if it's still running it will reappear under Discovered Devices.`)) {
+            return;
+        }
+
+        const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+        fetch(`/api/surveillance/devices/${encodeURIComponent(deviceId)}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-CSRF-TOKEN': csrf,
+            },
+        })
+        .then(r => {
+            if (!r.ok) return r.json().then(err => { throw new Error(err.error || 'Delete failed') });
+            return r.json();
+        })
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`device-card-${deviceId}`)?.remove();
+            }
+        })
+        .catch(err => alert(err.message));
+    };
+
     // ─── Discovered devices polling ──────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', function () {
         if (document.getElementById('sv-pending-devices-list')) {

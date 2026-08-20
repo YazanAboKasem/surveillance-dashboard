@@ -85,6 +85,9 @@
                             <i class="bi bi-gear-fill"></i>
                             Settings
                         </a>
+                        <button class="sv-btn sv-btn-danger" onclick="deleteDevice('{{ $device['id'] }}', '{{ addslashes($device['name']) }}')" title="Delete device">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
                     </div>
                 </div>
 

@@ -85,6 +85,7 @@ Route::get('/surveillance/devices/pending',                        [\App\Http\Co
 Route::post('/surveillance/devices/{deviceId}/register',           [\App\Http\Controllers\DeviceController::class, 'register']);
 Route::get('/surveillance/devices/{deviceId}/camera-config',       [\App\Http\Controllers\DeviceController::class, 'cameraConfig']);
 Route::put('/surveillance/devices/{deviceId}',                      [\App\Http\Controllers\DeviceController::class, 'update']);
+Route::delete('/surveillance/devices/{deviceId}',                   [\App\Http\Controllers\DeviceController::class, 'destroy']);
 Route::get('/surveillance/devices/{deviceId}',                      [\App\Http\Controllers\DeviceController::class, 'show']);
 
 // ── Fleet Map API Endpoints ───────────────────────────────────────────────────
