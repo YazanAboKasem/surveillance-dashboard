@@ -17,6 +17,8 @@ class DeviceCamera extends Model
         'channel',
         'type',
         'rtsp_port',
+        'rtsp_main_url',
+        'rtsp_sub_url',
         'ptz',
         'enabled',
     ];

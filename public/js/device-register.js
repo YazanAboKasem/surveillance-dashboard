@@ -180,26 +180,26 @@
         const row = document.createElement('div');
         row.className = 'sv-camera-row';
         row.id = `register-camera-row-${idx}`;
-        row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:8px';
-        const camType = v.type || 'hikvision';
+        row.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:8px';
         row.innerHTML = `
-            <input type="text" class="sv-input-sm" style="width:70px" placeholder="cam1" value="${escapeAttr(defaultKey)}" data-field="camera_key" title="Camera key (must match the device's local CAMERAS id)">
-            <input type="text" class="sv-input-sm" style="flex:1;min-width:120px" placeholder="Label (e.g. Front View)" value="${escapeAttr(v.label || '')}" data-field="label">
-            <select class="sv-input-sm" style="width:100px" data-field="type" title="Determines the RTSP URL layout used to reach this camera">
-                <option value="hikvision" ${camType === 'hikvision' ? 'selected' : ''}>Hikvision</option>
-                <option value="generic" ${camType === 'generic' ? 'selected' : ''}>Generic/ONVIF</option>
-            </select>
-            <input type="text" class="sv-input-sm" style="width:120px" placeholder="IP address" value="${escapeAttr(v.ip || '')}" data-field="ip">
-            <input type="number" class="sv-input-sm" style="width:70px" placeholder="RTSP port" value="${v.rtsp_port || 554}" min="1" data-field="rtsp_port" title="RTSP port">
-            <input type="text" class="sv-input-sm" style="width:90px" placeholder="Username" value="${escapeAttr(v.username || '')}" data-field="username">
-            <input type="password" class="sv-input-sm" style="width:90px" placeholder="${isEdit ? 'Keep current' : 'Password'}" data-field="password">
-            <input type="number" class="sv-input-sm" style="width:50px" placeholder="Ch." value="${v.channel || 1}" min="1" data-field="channel" title="Channel number">
-            <label class="sv-checkbox-label" style="margin:0">
-                <input type="checkbox" data-field="ptz" ${v.ptz ? 'checked' : ''}><span>PTZ</span>
-            </label>
-            <button type="button" class="sv-btn-sm sv-btn-danger" onclick="document.getElementById('register-camera-row-${idx}').remove()" title="Remove camera">
-                <i class="bi bi-trash"></i>
-            </button>`;
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                <input type="text" class="sv-input-sm" style="width:70px" placeholder="cam1" value="${escapeAttr(defaultKey)}" data-field="camera_key" title="Camera key (must match the device's local CAMERAS id)">
+                <input type="text" class="sv-input-sm" style="flex:1;min-width:120px" placeholder="Label (e.g. Front View)" value="${escapeAttr(v.label || '')}" data-field="label">
+                <input type="text" class="sv-input-sm" style="width:110px" placeholder="IP (for PTZ)" value="${escapeAttr(v.ip || '')}" data-field="ip" title="Camera IP — used for PTZ control, not for the stream">
+                <input type="text" class="sv-input-sm" style="width:90px" placeholder="Username" value="${escapeAttr(v.username || '')}" data-field="username">
+                <input type="password" class="sv-input-sm" style="width:90px" placeholder="${isEdit ? 'Keep current' : 'Password'}" data-field="password">
+                <input type="number" class="sv-input-sm" style="width:50px" placeholder="Ch." value="${v.channel || 1}" min="1" data-field="channel" title="Channel number (used for PTZ)">
+                <label class="sv-checkbox-label" style="margin:0">
+                    <input type="checkbox" data-field="ptz" ${v.ptz ? 'checked' : ''}><span>PTZ</span>
+                </label>
+                <button type="button" class="sv-btn-sm sv-btn-danger" onclick="document.getElementById('register-camera-row-${idx}').remove()" title="Remove camera">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                <input type="text" class="sv-input-sm" style="flex:1;min-width:220px" placeholder="Main stream RTSP URL — e.g. rtsp://192.168.1.165:8554/0" value="${escapeAttr(v.rtsp_main_url || '')}" data-field="rtsp_main_url">
+                <input type="text" class="sv-input-sm" style="flex:1;min-width:220px" placeholder="Sub stream RTSP URL — e.g. rtsp://192.168.1.165:8554/1" value="${escapeAttr(v.rtsp_sub_url || '')}" data-field="rtsp_sub_url">
+            </div>`;
 
         document.getElementById('register-camera-rows').appendChild(row);
     };
@@ -228,8 +228,8 @@
                 username: get('username').value.trim(),
                 password: get('password').value,
                 channel: parseInt(get('channel').value, 10) || 1,
-                type: get('type').value,
-                rtsp_port: parseInt(get('rtsp_port').value, 10) || 554,
+                rtsp_main_url: get('rtsp_main_url').value.trim(),
+                rtsp_sub_url: get('rtsp_sub_url').value.trim(),
                 ptz: get('ptz').checked,
             };
         }).filter(c => c.camera_key);

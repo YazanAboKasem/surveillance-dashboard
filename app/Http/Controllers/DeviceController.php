@@ -76,6 +76,8 @@ class DeviceController extends Controller
             'cameras.*.channel' => 'nullable|integer|min:1',
             'cameras.*.type' => 'nullable|string|in:hikvision,generic',
             'cameras.*.rtsp_port' => 'nullable|integer',
+            'cameras.*.rtsp_main_url' => 'nullable|string|max:500',
+            'cameras.*.rtsp_sub_url' => 'nullable|string|max:500',
             'cameras.*.ptz' => 'boolean',
         ]);
 
@@ -101,6 +103,8 @@ class DeviceController extends Controller
                     'channel' => $cam['channel'] ?? 1,
                     'type' => $cam['type'] ?? 'hikvision',
                     'rtsp_port' => $cam['rtsp_port'] ?? 554,
+                    'rtsp_main_url' => $cam['rtsp_main_url'] ?? null,
+                    'rtsp_sub_url' => $cam['rtsp_sub_url'] ?? null,
                     'ptz' => $cam['ptz'] ?? false,
                     'enabled' => true,
                 ]
@@ -146,6 +150,8 @@ class DeviceController extends Controller
                 'channel' => $c->channel,
                 'type' => $c->type,
                 'rtsp_port' => $c->rtsp_port,
+                'rtsp_main_url' => $c->rtsp_main_url,
+                'rtsp_sub_url' => $c->rtsp_sub_url,
                 'ptz' => $c->ptz,
                 // password intentionally omitted — never sent back to the browser
             ]),
@@ -186,6 +192,8 @@ class DeviceController extends Controller
             'cameras.*.channel' => 'nullable|integer|min:1',
             'cameras.*.type' => 'nullable|string|in:hikvision,generic',
             'cameras.*.rtsp_port' => 'nullable|integer',
+            'cameras.*.rtsp_main_url' => 'nullable|string|max:500',
+            'cameras.*.rtsp_sub_url' => 'nullable|string|max:500',
             'cameras.*.ptz' => 'boolean',
         ]);
 
@@ -208,6 +216,8 @@ class DeviceController extends Controller
                 'channel' => $cam['channel'] ?? 1,
                 'type' => $cam['type'] ?? 'hikvision',
                 'rtsp_port' => $cam['rtsp_port'] ?? 554,
+                'rtsp_main_url' => $cam['rtsp_main_url'] ?? null,
+                'rtsp_sub_url' => $cam['rtsp_sub_url'] ?? null,
                 'ptz' => $cam['ptz'] ?? false,
                 'enabled' => true,
             ];
@@ -273,6 +283,8 @@ class DeviceController extends Controller
                 'channel' => $c->channel,
                 'type' => $c->type,
                 'rtsp_port' => $c->rtsp_port,
+                'rtsp_main_url' => $c->rtsp_main_url,
+                'rtsp_sub_url' => $c->rtsp_sub_url,
                 'ptz' => $c->ptz,
             ]),
         ]);
