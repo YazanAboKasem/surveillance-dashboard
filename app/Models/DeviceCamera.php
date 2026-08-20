@@ -15,6 +15,8 @@ class DeviceCamera extends Model
         'username',
         'password',
         'channel',
+        'type',
+        'rtsp_port',
         'ptz',
         'enabled',
     ];

@@ -74,6 +74,8 @@ class DeviceController extends Controller
             'cameras.*.username' => 'nullable|string|max:100',
             'cameras.*.password' => 'nullable|string|max:255',
             'cameras.*.channel' => 'nullable|integer|min:1',
+            'cameras.*.type' => 'nullable|string|in:hikvision,generic',
+            'cameras.*.rtsp_port' => 'nullable|integer',
             'cameras.*.ptz' => 'boolean',
         ]);
 
@@ -97,6 +99,8 @@ class DeviceController extends Controller
                     'username' => $cam['username'] ?? null,
                     'password' => $cam['password'] ?? null,
                     'channel' => $cam['channel'] ?? 1,
+                    'type' => $cam['type'] ?? 'hikvision',
+                    'rtsp_port' => $cam['rtsp_port'] ?? 554,
                     'ptz' => $cam['ptz'] ?? false,
                     'enabled' => true,
                 ]
@@ -140,6 +144,8 @@ class DeviceController extends Controller
                 'ip' => $c->ip,
                 'username' => $c->username,
                 'channel' => $c->channel,
+                'type' => $c->type,
+                'rtsp_port' => $c->rtsp_port,
                 'ptz' => $c->ptz,
                 // password intentionally omitted — never sent back to the browser
             ]),
@@ -178,6 +184,8 @@ class DeviceController extends Controller
             'cameras.*.username' => 'nullable|string|max:100',
             'cameras.*.password' => 'nullable|string|max:255',
             'cameras.*.channel' => 'nullable|integer|min:1',
+            'cameras.*.type' => 'nullable|string|in:hikvision,generic',
+            'cameras.*.rtsp_port' => 'nullable|integer',
             'cameras.*.ptz' => 'boolean',
         ]);
 
@@ -198,6 +206,8 @@ class DeviceController extends Controller
                 'ip' => $cam['ip'] ?? null,
                 'username' => $cam['username'] ?? null,
                 'channel' => $cam['channel'] ?? 1,
+                'type' => $cam['type'] ?? 'hikvision',
+                'rtsp_port' => $cam['rtsp_port'] ?? 554,
                 'ptz' => $cam['ptz'] ?? false,
                 'enabled' => true,
             ];
@@ -219,6 +229,52 @@ class DeviceController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Device {$deviceId} updated.",
+        ]);
+    }
+
+    /**
+     * GET /api/surveillance/devices/{deviceId}/camera-config
+     *
+     * Called by the device itself (agent-to-server auth) at startup, so it
+     * can build its local mediamtx.yml and camera-control.py CAMERAS dict
+     * from whatever was entered in the dashboard's Register/Edit form,
+     * instead of needing those hand-edited on every device. Unlike show(),
+     * this DOES include camera passwords — the device needs them to
+     * actually connect to its cameras.
+     *
+     * Returns an empty cameras list (not an error) for an unregistered or
+     * unknown device id, so the caller can safely treat "nothing to sync
+     * yet" as a no-op instead of a failure.
+     */
+    public function cameraConfig(Request $request, string $deviceId): JsonResponse
+    {
+        if (! $this->isAuthorized($request)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $device = Device::where('device_id', $deviceId)
+            ->where('status', 'registered')
+            ->with('cameras')
+            ->first();
+
+        if (! $device) {
+            return response()->json(['device_id' => $deviceId, 'registered' => false, 'cameras' => []]);
+        }
+
+        return response()->json([
+            'device_id' => $device->device_id,
+            'registered' => true,
+            'cameras' => $device->cameras->where('enabled', true)->values()->map(fn (DeviceCamera $c) => [
+                'camera_key' => $c->camera_key,
+                'label' => $c->label,
+                'ip' => $c->ip,
+                'username' => $c->username,
+                'password' => $c->password,
+                'channel' => $c->channel,
+                'type' => $c->type,
+                'rtsp_port' => $c->rtsp_port,
+                'ptz' => $c->ptz,
+            ]),
         ]);
     }
 

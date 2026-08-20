@@ -81,10 +81,11 @@ Route::get('/surveillance/devices/{deviceId}/stats', [\App\Http\Controllers\Devi
 // ── Device Registry (discovery + registration) ────────────────────────────────
 // NOTE: /pending must stay registered before the bare {deviceId} route below,
 // otherwise it would be swallowed as a literal device id.
-Route::get('/surveillance/devices/pending',                [\App\Http\Controllers\DeviceController::class, 'pending']);
-Route::post('/surveillance/devices/{deviceId}/register',   [\App\Http\Controllers\DeviceController::class, 'register']);
-Route::put('/surveillance/devices/{deviceId}',              [\App\Http\Controllers\DeviceController::class, 'update']);
-Route::get('/surveillance/devices/{deviceId}',              [\App\Http\Controllers\DeviceController::class, 'show']);
+Route::get('/surveillance/devices/pending',                        [\App\Http\Controllers\DeviceController::class, 'pending']);
+Route::post('/surveillance/devices/{deviceId}/register',           [\App\Http\Controllers\DeviceController::class, 'register']);
+Route::get('/surveillance/devices/{deviceId}/camera-config',       [\App\Http\Controllers\DeviceController::class, 'cameraConfig']);
+Route::put('/surveillance/devices/{deviceId}',                      [\App\Http\Controllers\DeviceController::class, 'update']);
+Route::get('/surveillance/devices/{deviceId}',                      [\App\Http\Controllers\DeviceController::class, 'show']);
 
 // ── Fleet Map API Endpoints ───────────────────────────────────────────────────
 Route::get('/surveillance/map/devices',           [\App\Http\Controllers\MapController::class, 'devicesGeoJson']);
