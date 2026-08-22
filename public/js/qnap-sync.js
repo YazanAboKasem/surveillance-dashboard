@@ -63,12 +63,14 @@
         errLabel.classList.add('hidden');
 
         const scope = document.querySelector('input[name="sync-scope"]:checked')?.value;
+        const source = document.querySelector('input[name="sync-source"]:checked')?.value || 'sub';
         const selectedCams = Array.from(document.querySelectorAll('input[name="sync-cameras"]:checked')).map(el => el.value);
 
         const payload = {
             scope: scope,
             cameras: scope === 'cameras' ? selectedCams : [],
             days: scope === 'last_n_days' ? parseInt(document.getElementById('sync-days').value, 10) : null,
+            source: source,
             delete_after_upload: document.getElementById('delete-after-upload').checked,
             overwrite_existing: document.getElementById('overwrite-existing').checked,
         };

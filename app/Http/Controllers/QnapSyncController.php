@@ -34,6 +34,7 @@ class QnapSyncController extends Controller
             'scope' => 'required|string|in:all,today,last_n_days,cameras',
             'cameras' => 'nullable|array',
             'days' => 'nullable|integer',
+            'source' => 'nullable|string|in:main,sub',
             'delete_after_upload' => 'boolean',
             'overwrite_existing' => 'boolean',
             'files' => 'nullable|array',
@@ -66,6 +67,7 @@ class QnapSyncController extends Controller
             'scope' => $request->input('scope'),
             'cameras' => $request->input('cameras', []),
             'days' => $request->input('days') ? (int) $request->input('days') : null,
+            'source' => $request->input('source', 'sub'),
             'delete_after_upload' => $request->boolean('delete_after_upload'),
             'overwrite_existing' => $request->boolean('overwrite_existing'),
             'files' => $request->input('files', []),
@@ -189,6 +191,7 @@ class QnapSyncController extends Controller
             'scope' => 'required|string|in:all,today,last_n_days,cameras',
             'cameras' => 'nullable|array',
             'days' => 'nullable|integer',
+            'source' => 'nullable|string|in:main,sub',
         ]);
 
         $deviceId = $request->input('device_id');
@@ -205,6 +208,7 @@ class QnapSyncController extends Controller
             'scope' => $request->input('scope'),
             'cameras' => $request->input('cameras', []),
             'days' => $request->input('days') ? (int) $request->input('days') : null,
+            'source' => $request->input('source', 'sub'),
         ];
 
         $this->wsService->sendSyncListFiles($deviceId, $requestId, $options);

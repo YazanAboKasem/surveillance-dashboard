@@ -104,6 +104,7 @@
         
         // Form parameters
         const scope = document.querySelector('input[name="sync-scope"]:checked')?.value;
+        const source = document.querySelector('input[name="sync-source"]:checked')?.value || 'sub';
         const selectedCams = Array.from(document.querySelectorAll('input[name="sync-cameras"]:checked')).map(el => el.value);
         const days = scope === 'last_n_days' ? parseInt(document.getElementById('sync-days').value, 10) : null;
 
@@ -111,7 +112,8 @@
             device_id: window.CURRENT_DEVICE_ID,
             scope: scope,
             cameras: scope === 'cameras' ? selectedCams : [],
-            days: days
+            days: days,
+            source: source
         };
 
         // UI Feedback
@@ -321,14 +323,16 @@
         }
 
         const scope = document.querySelector('input[name="sync-scope"]:checked')?.value;
+        const source = document.querySelector('input[name="sync-source"]:checked')?.value || 'sub';
         const selectedCams = Array.from(document.querySelectorAll('input[name="sync-cameras"]:checked')).map(el => el.value);
         const days = scope === 'last_n_days' ? parseInt(document.getElementById('sync-days').value, 10) : null;
-        
+
         const payload = {
             device_id: window.CURRENT_DEVICE_ID,
             scope: scope,
             cameras: scope === 'cameras' ? selectedCams : [],
             days: days,
+            source: source, // explicit files (below) already reflect this tier from the scan step; still needed so run_vps_sync knows whether to skip compression
             delete_after_upload: document.getElementById('delete-after-upload').checked,
             overwrite_existing: document.getElementById('overwrite-existing').checked,
             files: selectedPaths // Send selected files!
