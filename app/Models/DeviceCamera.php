@@ -11,6 +11,7 @@ class DeviceCamera extends Model
         'device_id',
         'camera_key',
         'label',
+        'role',
         'ip',
         'username',
         'password',

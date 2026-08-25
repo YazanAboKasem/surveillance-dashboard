@@ -176,6 +176,10 @@
         const isEdit = document.getElementById('device-register-modal')?.dataset.mode === 'edit';
         const v = prefill || {};
         const defaultKey = v.camera_key || `cam${idx}`;
+        const roles = ['', 'FRONT', 'REAR_FIXED', 'REAR_PTZ'];
+        const roleOptions = roles.map(r =>
+            `<option value="${r}" ${v.role === r ? 'selected' : ''}>${r || '-- Role --'}</option>`
+        ).join('');
 
         const row = document.createElement('div');
         row.className = 'sv-camera-row';
@@ -185,6 +189,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
                 <input type="text" class="sv-input-sm" style="width:70px" placeholder="cam1" value="${escapeAttr(defaultKey)}" data-field="camera_key" title="Camera key (must match the device's local CAMERAS id)">
                 <input type="text" class="sv-input-sm" style="flex:1;min-width:120px" placeholder="Label (e.g. Front View)" value="${escapeAttr(v.label || '')}" data-field="label">
+                <select class="sv-input-sm" style="width:120px" data-field="role" title="AI camera role — drives which AI processing runs on this stream">${roleOptions}</select>
                 <input type="text" class="sv-input-sm" style="width:110px" placeholder="IP (for PTZ)" value="${escapeAttr(v.ip || '')}" data-field="ip" title="Camera IP — used for PTZ control, not for the stream">
                 <input type="text" class="sv-input-sm" style="width:90px" placeholder="Username" value="${escapeAttr(v.username || '')}" data-field="username">
                 <input type="password" class="sv-input-sm" style="width:90px" placeholder="${isEdit ? 'Keep current' : 'Password'}" data-field="password">
@@ -224,6 +229,7 @@
             return {
                 camera_key: get('camera_key').value.trim(),
                 label: get('label').value.trim(),
+                role: get('role').value || null,
                 ip: get('ip').value.trim(),
                 username: get('username').value.trim(),
                 password: get('password').value,

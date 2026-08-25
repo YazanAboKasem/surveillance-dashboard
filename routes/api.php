@@ -88,6 +88,11 @@ Route::put('/surveillance/devices/{deviceId}',                      [\App\Http\C
 Route::delete('/surveillance/devices/{deviceId}',                   [\App\Http\Controllers\DeviceController::class, 'destroy']);
 Route::get('/surveillance/devices/{deviceId}',                      [\App\Http\Controllers\DeviceController::class, 'show']);
 
+// ── AI Events (RoadShield AI — Phase 0 PoC) ────────────────────────────────────
+// Auth is per-device (Device::api_token from the token itself, not a body
+// field) — see EventController::resolveDevice().
+Route::post('/surveillance/events', [\App\Http\Controllers\EventController::class, 'store']);
+
 // ── Fleet Map API Endpoints ───────────────────────────────────────────────────
 Route::get('/surveillance/map/devices',           [\App\Http\Controllers\MapController::class, 'devicesGeoJson']);
 Route::get('/surveillance/map/route/{deviceId}',  [\App\Http\Controllers\MapController::class, 'deviceRoute']);

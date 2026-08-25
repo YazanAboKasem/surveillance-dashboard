@@ -7,6 +7,7 @@ use App\Models\DeviceCamera;
 use App\Services\DeviceRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Handles the device registry itself — completing registration for a
@@ -70,6 +71,7 @@ class DeviceController extends Controller
             'cameras' => 'required|array|min:1',
             'cameras.*.camera_key' => 'required|string|max:50',
             'cameras.*.label' => 'nullable|string|max:255',
+            'cameras.*.role' => 'nullable|string|in:FRONT,REAR_FIXED,REAR_PTZ',
             'cameras.*.ip' => 'nullable|string|max:100',
             'cameras.*.username' => 'nullable|string|max:100',
             'cameras.*.password' => 'nullable|string|max:255',
@@ -90,6 +92,10 @@ class DeviceController extends Controller
             'tunnel_cache_key' => "surveillance_tunnel_hls_url_{$device->device_id}",
             'status' => 'registered',
             'registered_at' => now(),
+            // Dedicated credential for the AI/event-ingestion endpoint — kept
+            // separate from the shared agent token so an event's device_id
+            // can be derived from the token instead of a client-supplied field.
+            'api_token' => $device->api_token ?? Str::random(40),
         ]);
 
         foreach ($validated['cameras'] as $cam) {
@@ -97,6 +103,7 @@ class DeviceController extends Controller
                 ['device_id' => $device->id, 'camera_key' => $cam['camera_key']],
                 [
                     'label' => $cam['label'] ?? $cam['camera_key'],
+                    'role' => $cam['role'] ?? null,
                     'ip' => $cam['ip'] ?? null,
                     'username' => $cam['username'] ?? null,
                     'password' => $cam['password'] ?? null,
@@ -145,6 +152,7 @@ class DeviceController extends Controller
             'cameras' => $device->cameras->map(fn (DeviceCamera $c) => [
                 'camera_key' => $c->camera_key,
                 'label' => $c->label,
+                'role' => $c->role,
                 'ip' => $c->ip,
                 'username' => $c->username,
                 'channel' => $c->channel,
@@ -186,6 +194,7 @@ class DeviceController extends Controller
             'cameras' => 'required|array|min:1',
             'cameras.*.camera_key' => 'required|string|max:50',
             'cameras.*.label' => 'nullable|string|max:255',
+            'cameras.*.role' => 'nullable|string|in:FRONT,REAR_FIXED,REAR_PTZ',
             'cameras.*.ip' => 'nullable|string|max:100',
             'cameras.*.username' => 'nullable|string|max:100',
             'cameras.*.password' => 'nullable|string|max:255',
@@ -203,6 +212,7 @@ class DeviceController extends Controller
             'host' => $validated['host'] ?? $device->host,
             'hls_port' => $validated['hls_port'] ?? $device->hls_port,
             'webrtc_port' => $validated['webrtc_port'] ?? $device->webrtc_port,
+            'api_token' => $device->api_token ?? Str::random(40),
         ]);
 
         $submittedKeys = [];
@@ -211,6 +221,7 @@ class DeviceController extends Controller
 
             $data = [
                 'label' => $cam['label'] ?? $cam['camera_key'],
+                'role' => $cam['role'] ?? null,
                 'ip' => $cam['ip'] ?? null,
                 'username' => $cam['username'] ?? null,
                 'channel' => $cam['channel'] ?? 1,
@@ -274,9 +285,14 @@ class DeviceController extends Controller
         return response()->json([
             'device_id' => $device->device_id,
             'registered' => true,
+            // Dedicated token for POST /api/surveillance/events — lets the
+            // AI process authenticate as *this* device without the endpoint
+            // having to trust a client-supplied device_id.
+            'event_api_token' => $device->api_token,
             'cameras' => $device->cameras->where('enabled', true)->values()->map(fn (DeviceCamera $c) => [
                 'camera_key' => $c->camera_key,
                 'label' => $c->label,
+                'role' => $c->role,
                 'ip' => $c->ip,
                 'username' => $c->username,
                 'password' => $c->password,
