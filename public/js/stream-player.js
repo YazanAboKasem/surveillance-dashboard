@@ -25,6 +25,7 @@
         maxBitrateKbps:     8000,
         ptzApiBase:         '/api/surveillance/cameras',
         ptzSpeed:           3,
+        ptzPulseMs:         400, // a click is a short nudge, not "move until told to stop"
         hls: {
             lowLatencyMode:              false,
             backBufferLength:            10,
@@ -354,11 +355,24 @@
     };
 
     // ─── PTZ ──────────────────────────────────────────────────────────────────
+    // A "continuous" PTZ command (pan/tilt/zoom) tells the camera to keep
+    // moving until it receives a stop — there's no click-and-hold gesture
+    // here, just a click, so without this a single click drives it all the
+    // way to its physical limit. "home" is a goto-preset, not a continuous
+    // move, so it doesn't need a follow-up stop.
+    const PTZ_STOP_ACTION = { pan_left: 'pan_stop', pan_right: 'pan_stop', tilt_up: 'tilt_stop',
+        tilt_down: 'tilt_stop', zoom_in: 'zoom_stop', zoom_out: 'zoom_stop' };
+
     function initPTZButtons() {
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.sv-ptz-btn[data-ptz]');
             if (!btn) return;
-            sendPTZ(btn.dataset.cam, btn.dataset.ptz);
+            const camId = btn.dataset.cam, action = btn.dataset.ptz;
+            sendPTZ(camId, action);
+            const stopAction = PTZ_STOP_ACTION[action];
+            if (stopAction) {
+                setTimeout(() => sendPTZ(camId, stopAction), CFG.ptzPulseMs);
+            }
         });
     }
 
