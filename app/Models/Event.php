@@ -10,6 +10,7 @@ class Event extends Model
     protected $fillable = [
         'zone_id',
         'device_id',
+        'device_power_log_id',
         'camera_key',
         'event_type',
         'sub_zone',
@@ -28,5 +29,10 @@ class Event extends Model
     public function device(): BelongsTo
     {
         return $this->belongsTo(Device::class);
+    }
+
+    public function powerLog(): BelongsTo
+    {
+        return $this->belongsTo(DevicePowerLog::class, 'device_power_log_id');
     }
 }

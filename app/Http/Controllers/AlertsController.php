@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Device;
+use App\Models\DevicePowerLog;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +14,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * AlertsController — dashboard page for browsing AI-detected events
  * (RoadShield AI). Read-only: events are written by EventController, this
  * only displays them.
+ *
+ * Filtering is trip-first: a "trip" is a device_power_logs row (started
+ * when the device's WS connects, ended when it disconnects — see
+ * JetsonWebSocketHandler). Pick a device, then a trip of that device,
+ * and only that trip's events show — trips are never mixed together.
  */
 class AlertsController extends Controller
 {
@@ -21,20 +27,41 @@ class AlertsController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Event::with('device')->orderByDesc('occurred_at');
-
-        if ($deviceId = $request->query('device_id')) {
-            $query->whereHas('device', fn ($q) => $q->where('device_id', $deviceId));
-        }
-        if ($eventType = $request->query('event_type')) {
-            $query->where('event_type', $eventType);
-        }
-
-        $events = $query->paginate(30)->withQueryString();
         $devices = Device::where('status', 'registered')->orderBy('name')->get(['device_id', 'name']);
-        $eventTypes = Event::select('event_type')->distinct()->pluck('event_type');
 
-        return view('surveillance.alerts', compact('events', 'devices', 'eventTypes'));
+        // Default to the first device with any recorded trips, so the page
+        // isn't empty on first load.
+        $deviceId = $request->query('device_id')
+            ?: DevicePowerLog::whereIn('device_id', $devices->pluck('device_id'))
+                ->latest('started_at')->value('device_id');
+
+        $trips = $deviceId
+            ? DevicePowerLog::where('device_id', $deviceId)->orderByDesc('started_at')->get()
+            : collect();
+
+        // Default to the most recent trip (usually the active one) for
+        // the selected device.
+        $tripId = $request->query('trip_id') ?: $trips->first()?->id;
+
+        $events = collect();
+        $eventTypes = collect();
+        if ($tripId) {
+            $query = Event::with('device')->where('device_power_log_id', $tripId)->orderByDesc('occurred_at');
+            if ($eventType = $request->query('event_type')) {
+                $query->where('event_type', $eventType);
+            }
+            $events = $query->paginate(30)->withQueryString();
+            $eventTypes = Event::where('device_power_log_id', $tripId)->select('event_type')->distinct()->pluck('event_type');
+        }
+
+        return view('surveillance.alerts', [
+            'devices' => $devices,
+            'trips' => $trips,
+            'selectedDeviceId' => $deviceId,
+            'selectedTripId' => $tripId,
+            'events' => $events,
+            'eventTypes' => $eventTypes,
+        ]);
     }
 
     /**

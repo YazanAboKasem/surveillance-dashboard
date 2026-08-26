@@ -22,45 +22,67 @@
             </div>
 
             <div class="sv-settings-card-body" style="padding: 20px 24px;">
-                {{-- Filters --}}
+                {{-- Trip-first filters: device, then one of its trips, then optionally event type --}}
                 <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
                     <select name="device_id" class="sv-input-sm" style="width:200px" onchange="this.form.submit()">
-                        <option value="">All devices</option>
+                        <option value="">Select a device…</option>
                         @foreach ($devices as $device)
-                            <option value="{{ $device->device_id }}" {{ request('device_id') === $device->device_id ? 'selected' : '' }}>
+                            <option value="{{ $device->device_id }}" {{ $selectedDeviceId === $device->device_id ? 'selected' : '' }}>
                                 {{ $device->name ?: $device->device_id }}
                             </option>
                         @endforeach
                     </select>
 
-                    <select name="event_type" class="sv-input-sm" style="width:200px" onchange="this.form.submit()">
+                    <select name="trip_id" class="sv-input-sm" style="width:280px" onchange="this.form.submit()" {{ $trips->isEmpty() ? 'disabled' : '' }}>
+                        @forelse ($trips as $trip)
+                            <option value="{{ $trip->id }}" {{ (int) $selectedTripId === $trip->id ? 'selected' : '' }}>
+                                {{ $trip->started_at?->format('Y-m-d H:i') }}
+                                →
+                                {{ $trip->stopped_at ? $trip->stopped_at->format('H:i') : 'ACTIVE NOW' }}
+                            </option>
+                        @empty
+                            <option value="">No trips recorded for this device</option>
+                        @endforelse
+                    </select>
+
+                    <select name="event_type" class="sv-input-sm" style="width:180px" onchange="this.form.submit()" {{ !$selectedTripId ? 'disabled' : '' }}>
                         <option value="">All event types</option>
                         @foreach ($eventTypes as $type)
                             <option value="{{ $type }}" {{ request('event_type') === $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
                     </select>
-
-                    @if (request('device_id') || request('event_type'))
-                        <a href="{{ route('surveillance.alerts') }}" class="sv-btn sv-btn-secondary" style="padding:6px 12px;font-size:12px">
-                            <i class="bi bi-x-lg"></i> Clear filters
-                        </a>
-                    @endif
                 </form>
 
-                @if ($events->isEmpty())
+                @if (!$selectedTripId)
+                    <div class="sv-empty-state">
+                        <i class="bi bi-signpost-split" style="font-size:40px;opacity:0.3;display:block;margin-bottom:12px"></i>
+                        No trip selected.
+                        <div class="sv-empty-hint">A trip starts when the device connects and ends when it disconnects. Pick a device and a trip above to see its events.</div>
+                    </div>
+                @elseif ($events->isEmpty())
                     <div class="sv-empty-state">
                         <i class="bi bi-bell-slash" style="font-size:40px;opacity:0.3;display:block;margin-bottom:12px"></i>
-                        No AI events yet.
-                        <div class="sv-empty-hint">Events appear here once a Jetson's AI pipeline reports a detection (e.g. person detected on a REAR_FIXED camera).</div>
+                        No AI events during this trip.
                     </div>
                 @else
+                    @php $activeTrip = $trips->firstWhere('id', (int) $selectedTripId); @endphp
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--text-secondary);font-size:13px">
+                        <i class="bi bi-signpost-split" style="color:var(--accent)"></i>
+                        Trip: {{ $activeTrip?->started_at?->format('Y-m-d H:i') }}
+                        →
+                        @if ($activeTrip && !$activeTrip->stopped_at)
+                            <span style="color:var(--green)">ACTIVE NOW</span>
+                        @else
+                            {{ $activeTrip?->stopped_at?->format('Y-m-d H:i') }}
+                        @endif
+                    </div>
+
                     <div class="sv-table-responsive">
                         <table class="sv-table">
                             <thead>
                                 <tr>
                                     <th style="width:70px">Snapshot</th>
                                     <th>Event</th>
-                                    <th>Device</th>
                                     <th>Camera</th>
                                     <th>Track</th>
                                     <th>Confidence</th>
@@ -88,7 +110,6 @@
                                                 <div style="color:var(--text-muted);font-size:11px;margin-top:3px">{{ $event->sub_zone }}</div>
                                             @endif
                                         </td>
-                                        <td>{{ $event->device->name ?? $event->device->device_id ?? '—' }}</td>
                                         <td class="mono">{{ $event->camera_key }}</td>
                                         <td class="mono">{{ $event->track_id ?? '—' }}</td>
                                         <td>{{ $event->confidence !== null ? number_format($event->confidence * 100, 0) . '%' : '—' }}</td>

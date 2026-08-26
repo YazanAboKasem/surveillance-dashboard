@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Device;
+use App\Models\DevicePowerLog;
 use App\Models\Event;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,8 +49,20 @@ class EventController extends Controller
             $snapshotPath = $request->file('snapshot')->store("events/{$device->device_id}", 'public');
         }
 
+        // Attach the trip (device_power_logs row) this event happened
+        // during, if the device currently has one open. See
+        // JetsonWebSocketHandler::recordStartup/recordShutdown — a trip
+        // starts when the device's WS connects and ends when it
+        // disconnects, so this is normally set except in a brief race
+        // right after the very first-ever connection.
+        $openTrip = DevicePowerLog::where('device_id', $device->device_id)
+            ->whereNull('stopped_at')
+            ->latest('started_at')
+            ->first();
+
         $event = Event::create([
             'device_id' => $device->id,
+            'device_power_log_id' => $openTrip?->id,
             'camera_key' => $validated['camera_key'],
             'event_type' => $validated['event_type'],
             'track_id' => $validated['track_id'] ?? null,
