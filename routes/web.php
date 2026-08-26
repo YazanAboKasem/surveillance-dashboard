@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\SurveillanceController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\AlertsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -49,4 +50,10 @@ Route::get('/surveillance/devices/{deviceId}/terminal/status', [\App\Http\Contro
 // Fleet Map
 Route::get('/surveillance/map', [MapController::class, 'index'])
     ->name('surveillance.map');
+
+// AI Alerts (RoadShield AI events)
+Route::get('/surveillance/alerts', [AlertsController::class, 'index'])
+    ->name('surveillance.alerts');
+Route::get('/surveillance/alerts/{event}/snapshot', [AlertsController::class, 'snapshot'])
+    ->name('surveillance.alerts.snapshot');
 

@@ -87,10 +87,11 @@
                         <span>System Info</span>
                     </a>
 
-                    <a href="#" class="sv-nav-link" id="nav-alerts" style="opacity:0.4;pointer-events:none">
+                    <a href="{{ route('surveillance.alerts') }}"
+                       class="sv-nav-link {{ request()->routeIs('surveillance.alerts') ? 'active' : '' }}"
+                       id="nav-alerts">
                         <i class="bi bi-bell-fill"></i>
                         <span>AI Alerts</span>
-                        <span class="sv-nav-badge phase">P2</span>
                     </a>
 
                     <a href="#" class="sv-nav-link" id="nav-notifications" style="opacity:0.4;pointer-events:none">
