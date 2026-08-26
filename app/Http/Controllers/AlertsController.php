@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Device;
 use App\Models\Event;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * AlertsController — dashboard page for browsing AI-detected events
@@ -44,7 +44,7 @@ class AlertsController extends Controller
      * `php artisan storage:link` having been run — keeps this working
      * regardless of that deployment step.
      */
-    public function snapshot(Event $event): Response
+    public function snapshot(Event $event): StreamedResponse
     {
         abort_unless($event->snapshot_path && Storage::disk('public')->exists($event->snapshot_path), 404);
 
