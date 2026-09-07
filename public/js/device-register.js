@@ -181,6 +181,16 @@
             `<option value="${r}" ${v.role === r ? 'selected' : ''}>${r || '-- Role --'}</option>`
         ).join('');
 
+        const types = [
+            ['hikvision', 'Hikvision (ISAPI)'],
+            ['onvif', 'ONVIF'],
+            ['generic', 'Generic RTSP'],
+        ];
+        const cameraType = v.type || 'hikvision';
+        const typeOptions = types.map(([val, label]) =>
+            `<option value="${val}" ${cameraType === val ? 'selected' : ''}>${label}</option>`
+        ).join('');
+
         const row = document.createElement('div');
         row.className = 'sv-camera-row';
         row.id = `register-camera-row-${idx}`;
@@ -190,6 +200,7 @@
                 <input type="text" class="sv-input-sm" style="width:70px" placeholder="cam1" value="${escapeAttr(defaultKey)}" data-field="camera_key" title="Camera key (must match the device's local CAMERAS id)">
                 <input type="text" class="sv-input-sm" style="flex:1;min-width:120px" placeholder="Label (e.g. Front View)" value="${escapeAttr(v.label || '')}" data-field="label">
                 <select class="sv-input-sm" style="width:120px" data-field="role" title="AI camera role — drives which AI processing runs on this stream">${roleOptions}</select>
+                <select class="sv-input-sm" style="width:130px" data-field="type" title="Camera protocol — which PTZ control method the agent uses">${typeOptions}</select>
                 <input type="text" class="sv-input-sm" style="width:110px" placeholder="IP (for PTZ)" value="${escapeAttr(v.ip || '')}" data-field="ip" title="Camera IP — used for PTZ control, not for the stream">
                 <input type="text" class="sv-input-sm" style="width:90px" placeholder="Username" value="${escapeAttr(v.username || '')}" data-field="username">
                 <input type="password" class="sv-input-sm" style="width:90px" placeholder="${isEdit ? 'Keep current' : 'Password'}" data-field="password">
@@ -230,6 +241,7 @@
                 camera_key: get('camera_key').value.trim(),
                 label: get('label').value.trim(),
                 role: get('role').value || null,
+                type: get('type').value || 'hikvision',
                 ip: get('ip').value.trim(),
                 username: get('username').value.trim(),
                 password: get('password').value,
