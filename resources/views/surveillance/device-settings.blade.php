@@ -264,20 +264,18 @@
 @endsection
 
 @push('styles')
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin="" />
     <style>
-        .leaflet-popup-content-wrapper {
+        .gm-style .gm-style-iw-c {
             background: rgba(15, 17, 23, 0.95) !important;
             backdrop-filter: blur(12px) !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
             border-radius: 12px !important;
             box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important;
-            color: #e2e8f0 !important;
         }
-        .leaflet-popup-tip { background: rgba(15, 17, 23, 0.95) !important; }
-        .leaflet-popup-content { margin: 8px 12px !important; font-size: 12px; }
+        .gm-style .gm-style-iw-d { color: #e2e8f0 !important; font-size: 12px; }
+        .gm-style .gm-style-iw-t::after { background: rgba(15, 17, 23, 0.95) !important; }
+        .gm-style-iw-tc::after { background: rgba(15, 17, 23, 0.95) !important; }
+        .gm-ui-hover-effect > span { background-color: #94a3b8 !important; }
     </style>
 @endpush
 
@@ -291,14 +289,28 @@
 
     <script src="{{ asset('js/terminal.js') }}?v={{ config('surveillance.asset_version', '1') }}"></script>
 
-    {{-- Leaflet JS for route modal --}}
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
+    {{-- Google Maps JS API for route modal (loaded synchronously — the modal
+         is only opened on click, long after page load, so no callback needed) --}}
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ config('surveillance.google_maps_api_key') }}"></script>
 
     <script>
         const DEVICE_ID = @json($device['id']);
-        let _drMap = null, _drLayer = null, _drMarkers = null;
+        let _drMap = null, _drPolylines = [], _drMarkers = [], _drInfoWindow = null;
+        const DEVICE_ROUTE_MAP_STYLE = [
+            { elementType: 'geometry', stylers: [{ color: '#1a1d23' }] },
+            { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1d23' }] },
+            { elementType: 'labels.text.fill', stylers: [{ color: '#8a8f98' }] },
+            { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#3a3f4b' }] },
+            { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
+            { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#1f2a20' }] },
+            { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2e37' }] },
+            { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
+            { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+            { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+            { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2a2e37' }] },
+            { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f172a' }] },
+            { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4b5563' }] },
+        ];
 
         function openPowerLogsModal() {
             document.getElementById('power-logs-modal').classList.remove('hidden');
@@ -317,19 +329,16 @@
 
             setTimeout(() => {
                 if (!_drMap) {
-                    _drMap = L.map('device-route-map', {
-                        center: [25.2048, 55.2708],
+                    _drMap = new google.maps.Map(document.getElementById('device-route-map'), {
+                        center: { lat: 25.2048, lng: 55.2708 },
                         zoom: 10,
+                        disableDefaultUI: true,
                         zoomControl: true,
-                        attributionControl: false,
+                        styles: DEVICE_ROUTE_MAP_STYLE,
                     });
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                        maxZoom: 19, subdomains: 'abcd'
-                    }).addTo(_drMap);
-                    _drLayer = L.layerGroup().addTo(_drMap);
-                    _drMarkers = L.layerGroup().addTo(_drMap);
+                    _drInfoWindow = new google.maps.InfoWindow();
                 } else {
-                    _drMap.invalidateSize();
+                    google.maps.event.trigger(_drMap, 'resize');
                 }
                 loadDeviceRoute();
             }, 200);
@@ -351,8 +360,11 @@
             fetch(`/api/surveillance/map/route/${DEVICE_ID}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
                 .then(r => r.json())
                 .then(data => {
-                    _drLayer.clearLayers();
-                    _drMarkers.clearLayers();
+                    _drPolylines.forEach(p => p.setMap(null));
+                    _drPolylines = [];
+                    _drMarkers.forEach(m => m.setMap(null));
+                    _drMarkers = [];
+
                     const pts = data.coordinates || [];
                     const infoEl = document.getElementById('device-route-info');
 
@@ -362,7 +374,8 @@
                     }
                     if (infoEl) infoEl.textContent = `${pts.length} points recorded`;
 
-                    const latLngs = pts.map(p => [p.lat, p.lng]);
+                    const latLngs = pts.map(p => ({ lat: p.lat, lng: p.lng }));
+                    const bounds = new google.maps.LatLngBounds();
 
                     // Draw gradient polyline
                     for (let i = 0; i < latLngs.length - 1; i++) {
@@ -370,23 +383,40 @@
                         const r = Math.round(14 + (139 - 14) * ratio);
                         const g = Math.round(165 + (92 - 165) * ratio);
                         const b = Math.round(233 + (246 - 233) * ratio);
-                        L.polyline([latLngs[i], latLngs[i+1]], {
-                            color: `rgb(${r},${g},${b})`, weight: 3, opacity: 0.85
-                        }).addTo(_drLayer);
+                        const seg = new google.maps.Polyline({
+                            path: [latLngs[i], latLngs[i + 1]],
+                            strokeColor: `rgb(${r},${g},${b})`,
+                            strokeWeight: 3,
+                            strokeOpacity: 0.85,
+                            map: _drMap,
+                        });
+                        _drPolylines.push(seg);
                     }
+                    latLngs.forEach(p => bounds.extend(p));
 
                     // Start / End markers
-                    const mkIcon = (color) => L.divIcon({
-                        className: '',
-                        html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
-                        iconSize: [14, 14], iconAnchor: [7, 7],
-                    });
-                    L.marker(latLngs[0], { icon: mkIcon('#22c55e') })
-                        .bindPopup(`<b>Start</b><br>${pts[0].recorded_at}`).addTo(_drMarkers);
-                    L.marker(latLngs[latLngs.length-1], { icon: mkIcon('#ef4444') })
-                        .bindPopup(`<b>End</b><br>${pts[pts.length-1].recorded_at}`).addTo(_drMarkers);
+                    const mkMarker = (position, color, label, popupHtml) => {
+                        const marker = new google.maps.Marker({
+                            position, map: _drMap,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 7,
+                                fillColor: color,
+                                fillOpacity: 1,
+                                strokeColor: '#fff',
+                                strokeWeight: 2,
+                            },
+                        });
+                        marker.addListener('click', () => {
+                            _drInfoWindow.setContent(popupHtml);
+                            _drInfoWindow.open(_drMap, marker);
+                        });
+                        _drMarkers.push(marker);
+                    };
+                    mkMarker(latLngs[0], '#22c55e', 'Start', `<b>Start</b><br>${pts[0].recorded_at}`);
+                    mkMarker(latLngs[latLngs.length - 1], '#ef4444', 'End', `<b>End</b><br>${pts[pts.length - 1].recorded_at}`);
 
-                    _drMap.fitBounds(latLngs, { padding: [30, 30] });
+                    _drMap.fitBounds(bounds, 30);
                 })
                 .catch(err => console.error('Route load error:', err));
         }
