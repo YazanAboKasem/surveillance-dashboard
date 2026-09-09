@@ -1,5 +1,5 @@
 /**
- * RoadShield — Fleet Map (Leaflet.js)
+ * RoadShield — Fleet Map (Google Maps JS API)
  * ====================================
  * Live fleet map showing all Jetson devices with color-coded markers.
  * Green = Online, Red = Offline, Gray = No GPS.
@@ -13,52 +13,61 @@
     const REFRESH_INTERVAL = 10000; // 10 seconds
     const API_URL = '/api/surveillance/map/devices';
     const ROUTE_API_URL = '/api/surveillance/map/route';
-    const DEFAULT_CENTER = [25.2048, 55.2708]; // Dubai
+    const DEFAULT_CENTER = { lat: 25.2048, lng: 55.2708 }; // Dubai
     const DEFAULT_ZOOM = 10;
+
+    // Dark map theme — mirrors the previous CartoDB "dark_all" tile look.
+    const DARK_MAP_STYLE = [
+        { elementType: 'geometry', stylers: [{ color: '#1a1d23' }] },
+        { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1d23' }] },
+        { elementType: 'labels.text.fill', stylers: [{ color: '#8a8f98' }] },
+        { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#3a3f4b' }] },
+        { featureType: 'administrative.country', elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+        { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
+        { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#1f2a20' }] },
+        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2e37' }] },
+        { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
+        { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+        { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+        { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+        { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2a2e37' }] },
+        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f172a' }] },
+        { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4b5563' }] },
+    ];
 
     // ── State ───────────────────────────────────────────────────────
     let map = null;
-    let markersLayer = null;
+    let markers = [];
+    let sharedInfoWindow = null;
     let routeMap = null;
-    let routeLayer = null;
-    let routeMarkersLayer = null;
+    let routePolylines = [];
+    let routeMarkers = [];
+    let routeInfoWindow = null;
     let currentRouteDeviceId = null;
     let refreshTimer = null;
 
-    // ── Initialize Map ──────────────────────────────────────────────
-    function initMap() {
+    // ── Initialize Map (called by Google Maps JS API via ?callback=) ──
+    window.initFleetMap = function () {
         const mapEl = document.getElementById('fleet-map');
         if (!mapEl) return;
 
-        map = L.map('fleet-map', {
+        map = new google.maps.Map(mapEl, {
             center: DEFAULT_CENTER,
             zoom: DEFAULT_ZOOM,
-            zoomControl: false,
-            attributionControl: false,
+            styles: DARK_MAP_STYLE,
+            disableDefaultUI: true,
+            zoomControl: true,
+            zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
         });
 
-        // Dark tile layer
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19,
-            subdomains: 'abcd',
-        }).addTo(map);
-
-        // Zoom control — top-right
-        L.control.zoom({ position: 'topright' }).addTo(map);
-
-        // Attribution — bottom-right
-        L.control.attribution({ position: 'bottomright', prefix: false })
-            .addAttribution('© <a href="https://carto.com/">CARTO</a> · © <a href="https://osm.org/copyright">OSM</a>')
-            .addTo(map);
-
-        markersLayer = L.layerGroup().addTo(map);
+        sharedInfoWindow = new google.maps.InfoWindow();
 
         // Initial load
         loadDevices();
 
         // Auto-refresh
         refreshTimer = setInterval(loadDevices, REFRESH_INTERVAL);
-    }
+    };
 
     // ── Load Devices ────────────────────────────────────────────────
     function loadDevices() {
@@ -73,10 +82,12 @@
 
     // ── Render Markers ──────────────────────────────────────────────
     function renderMarkers(geojson) {
-        markersLayer.clearLayers();
+        markers.forEach(m => m.setMap(null));
+        markers = [];
 
         const features = geojson.features || [];
-        const boundsArr = [];
+        const bounds = new google.maps.LatLngBounds();
+        let hasPoints = false;
 
         features.forEach(feature => {
             const props = feature.properties;
@@ -85,21 +96,25 @@
             const lng = coords[0];
 
             if (!props.has_gps) {
-                // Device has no GPS data — skip or place at 0,0 marker area
+                // Device has no GPS data — skip.
                 return;
             }
 
-            // Create custom icon
-            const markerClass = props.is_online ? 'sv-marker-online' : 'sv-marker-offline';
-            const icon = L.divIcon({
-                className: '',
-                html: `<div class="${markerClass}"><i class="bi bi-truck" style="font-size:14px"></i></div>`,
-                iconSize: [36, 36],
-                iconAnchor: [18, 18],
-                popupAnchor: [0, -22],
-            });
+            const position = { lat, lng };
+            const color = props.is_online ? '#22c55e' : '#ef4444';
 
-            const marker = L.marker([lat, lng], { icon }).addTo(markersLayer);
+            const marker = new google.maps.Marker({
+                position,
+                map,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 12,
+                    fillColor: color,
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2,
+                },
+            });
 
             // Build popup
             const statusBadge = props.is_online
@@ -145,17 +160,20 @@
                 </div>
             `;
 
-            marker.bindPopup(popupHtml, { maxWidth: 280, closeButton: false });
-            boundsArr.push([lat, lng]);
+            marker.addListener('click', () => {
+                sharedInfoWindow.setContent(popupHtml);
+                sharedInfoWindow.open(map, marker);
+            });
+
+            markers.push(marker);
+            bounds.extend(position);
+            hasPoints = true;
         });
 
-        // Fit bounds if we have markers
-        if (boundsArr.length > 0) {
-            // Only fit on first load
-            if (!window._mapFittedOnce) {
-                map.fitBounds(boundsArr, { padding: [50, 50], maxZoom: 14 });
-                window._mapFittedOnce = true;
-            }
+        // Fit bounds on first load only
+        if (hasPoints && !window._mapFittedOnce) {
+            map.fitBounds(bounds, 50);
+            window._mapFittedOnce = true;
         }
     }
 
@@ -204,22 +222,16 @@
         // Initialize route map if not exists
         setTimeout(() => {
             if (!routeMap) {
-                routeMap = L.map('route-modal-map', {
+                routeMap = new google.maps.Map(document.getElementById('route-modal-map'), {
                     center: DEFAULT_CENTER,
                     zoom: DEFAULT_ZOOM,
+                    styles: DARK_MAP_STYLE,
+                    disableDefaultUI: true,
                     zoomControl: true,
-                    attributionControl: false,
                 });
-
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    maxZoom: 19,
-                    subdomains: 'abcd',
-                }).addTo(routeMap);
-
-                routeLayer = L.layerGroup().addTo(routeMap);
-                routeMarkersLayer = L.layerGroup().addTo(routeMap);
+                routeInfoWindow = new google.maps.InfoWindow();
             } else {
-                routeMap.invalidateSize();
+                google.maps.event.trigger(routeMap, 'resize');
             }
 
             loadRouteForDate();
@@ -297,9 +309,15 @@
         }
     };
 
+    function clearRoute() {
+        routePolylines.forEach(p => p.setMap(null));
+        routePolylines = [];
+        routeMarkers.forEach(m => m.setMap(null));
+        routeMarkers = [];
+    }
+
     function renderRoute(data, tripFilter = 'all') {
-        routeLayer.clearLayers();
-        routeMarkersLayer.clearLayers();
+        clearRoute();
 
         const countEl = document.getElementById('route-point-count');
         const trips = data.trips || [];
@@ -327,95 +345,128 @@
             countEl.textContent = `${activeTrips.length} رحلة · ${pointsToDraw.length} نقطة مسجلة`;
         }
 
-        const allLatLngs = [];
+        const bounds = new google.maps.LatLngBounds();
+        let hasPoints = false;
 
         activeTrips.forEach((trip, tIdx) => {
             const points = trip.coordinates || [];
             if (points.length === 0) return;
 
-            const latLngs = points.map(p => [p.lat, p.lng]);
-            allLatLngs.push(...latLngs);
+            const latLngs = points.map(p => ({ lat: p.lat, lng: p.lng }));
+            latLngs.forEach(p => { bounds.extend(p); hasPoints = true; });
 
             const tripColor = getTripColor(tIdx);
 
-            const polyline = L.polyline(latLngs, {
-                color: tripColor,
-                weight: 4,
-                opacity: 0.85,
-            }).addTo(routeLayer);
-
-            polyline.bindPopup(`
-                <div class="sv-popup-inner" style="padding:10px">
-                    <b>🚗 ${trip.title}</b><br>
-                    <span style="font-size:11px;color:#94a3b8">
-                        🕒 التوقيت: ${trip.start_time_short} - ${trip.end_time_short} (${trip.duration_minutes} دقيقة)<br>
-                        📏 المسافة: ${trip.distance_km} كم<br>
-                        ⚡ أعلى سرعة: ${trip.max_speed} كم/س
-                    </span>
-                </div>
-            `);
+            const polyline = new google.maps.Polyline({
+                path: latLngs,
+                strokeColor: tripColor,
+                strokeWeight: 4,
+                strokeOpacity: 0.85,
+                map: routeMap,
+            });
+            polyline.addListener('click', (e) => {
+                routeInfoWindow.setContent(`
+                    <div class="sv-popup-inner" style="padding:10px">
+                        <b>🚗 ${trip.title}</b><br>
+                        <span style="font-size:11px;color:#94a3b8">
+                            🕒 التوقيت: ${trip.start_time_short} - ${trip.end_time_short} (${trip.duration_minutes} دقيقة)<br>
+                            📏 المسافة: ${trip.distance_km} كم<br>
+                            ⚡ أعلى سرعة: ${trip.max_speed} كم/س
+                        </span>
+                    </div>
+                `);
+                routeInfoWindow.setPosition(e.latLng);
+                routeInfoWindow.open(routeMap);
+            });
+            routePolylines.push(polyline);
 
             // Start marker
-            const startIcon = L.divIcon({
-                className: '',
-                html: `<div style="width:18px;height:18px;border-radius:50%;background:#22c55e;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:bold;">S</div>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9],
+            const startMarker = new google.maps.Marker({
+                position: latLngs[0],
+                map: routeMap,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 9,
+                    fillColor: '#22c55e',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2,
+                },
+                label: { text: 'S', color: '#fff', fontSize: '10px', fontWeight: 'bold' },
             });
-            L.marker(latLngs[0], { icon: startIcon })
-                .bindPopup(`
+            startMarker.addListener('click', () => {
+                routeInfoWindow.setContent(`
                     <div class="sv-popup-inner" style="padding:10px">
                         <b style="color:#22c55e">🚩 بداية الرحلة (${trip.title})</b><br>
                         <b>🕒 الوقت:</b> ${points[0].recorded_at}<br>
                         <b>🚗 السرعة:</b> ${points[0].speed !== null && points[0].speed !== undefined ? points[0].speed + ' كم/س' : '—'}<br>
                         <b>⛰️ الارتفاع:</b> ${points[0].altitude !== null && points[0].altitude !== undefined ? points[0].altitude + ' م' : '—'}
                     </div>
-                `)
-                .addTo(routeMarkersLayer);
+                `);
+                routeInfoWindow.open(routeMap, startMarker);
+            });
+            routeMarkers.push(startMarker);
 
             // End marker
-            const endIcon = L.divIcon({
-                className: '',
-                html: `<div style="width:18px;height:18px;border-radius:50%;background:#ef4444;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:bold;">E</div>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9],
+            const endMarker = new google.maps.Marker({
+                position: latLngs[latLngs.length - 1],
+                map: routeMap,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 9,
+                    fillColor: '#ef4444',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2,
+                },
+                label: { text: 'E', color: '#fff', fontSize: '10px', fontWeight: 'bold' },
             });
-            L.marker(latLngs[latLngs.length - 1], { icon: endIcon })
-                .bindPopup(`
+            endMarker.addListener('click', () => {
+                routeInfoWindow.setContent(`
                     <div class="sv-popup-inner" style="padding:10px">
                         <b style="color:#ef4444">🏁 نهاية الرحلة (${trip.title})</b><br>
                         <b>🕒 الوقت:</b> ${points[points.length - 1].recorded_at}<br>
                         <b>🚗 السرعة:</b> ${points[points.length - 1].speed !== null && points[points.length - 1].speed !== undefined ? points[points.length - 1].speed + ' كم/س' : '—'}<br>
                         <b>⛰️ الارتفاع:</b> ${points[points.length - 1].altitude !== null && points[points.length - 1].altitude !== undefined ? points[points.length - 1].altitude + ' م' : '—'}
                     </div>
-                `)
-                .addTo(routeMarkersLayer);
+                `);
+                routeInfoWindow.open(routeMap, endMarker);
+            });
+            routeMarkers.push(endMarker);
 
             // Intermediate clickable points
             const sampleStep = Math.max(1, Math.floor(points.length / 50));
             for (let i = 1; i < points.length - 1; i += sampleStep) {
                 const pt = points[i];
-                const ptIcon = L.divIcon({
-                    className: '',
-                    html: `<div style="width:8px;height:8px;border-radius:50%;background:${tripColor};border:1px solid #fff;opacity:0.8;"></div>`,
-                    iconSize: [8, 8],
-                    iconAnchor: [4, 4],
+                const ptMarker = new google.maps.Marker({
+                    position: { lat: pt.lat, lng: pt.lng },
+                    map: routeMap,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 4,
+                        fillColor: tripColor,
+                        fillOpacity: 0.8,
+                        strokeColor: '#fff',
+                        strokeWeight: 1,
+                    },
                 });
-
-                const ptMarker = L.marker([pt.lat, pt.lng], { icon: ptIcon }).addTo(routeMarkersLayer);
-                ptMarker.bindPopup(`
-                    <div class="sv-popup-inner" style="padding:10px">
-                        <b>📍 نقطة على المسار (${trip.title})</b><br>
-                        <b>🕒 الوقت:</b> ${pt.recorded_at}<br>
-                        <b>🚗 السرعة:</b> ${pt.speed !== null && pt.speed !== undefined ? pt.speed + ' كم/س' : '—'}<br>
-                        <b>⛰️ الارتفاع:</b> ${pt.altitude !== null && pt.altitude !== undefined ? pt.altitude + ' م' : '—'}
-                    </div>
-                `);
+                ptMarker.addListener('click', () => {
+                    routeInfoWindow.setContent(`
+                        <div class="sv-popup-inner" style="padding:10px">
+                            <b>📍 نقطة على المسار (${trip.title})</b><br>
+                            <b>🕒 الوقت:</b> ${pt.recorded_at}<br>
+                            <b>🚗 السرعة:</b> ${pt.speed !== null && pt.speed !== undefined ? pt.speed + ' كم/س' : '—'}<br>
+                            <b>⛰️ الارتفاع:</b> ${pt.altitude !== null && pt.altitude !== undefined ? pt.altitude + ' م' : '—'}
+                        </div>
+                    `);
+                    routeInfoWindow.open(routeMap, ptMarker);
+                });
+                routeMarkers.push(ptMarker);
             }
         });
 
-        if (allLatLngs.length > 0) {
-            routeMap.fitBounds(allLatLngs, { padding: [30, 30] });
+        if (hasPoints) {
+            routeMap.fitBounds(bounds, 30);
         }
     }
 
@@ -464,9 +515,9 @@
     }
 
     // ── Boot ────────────────────────────────────────────────────────
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initMap);
-    } else {
-        initMap();
-    }
+    // initFleetMap() is invoked by the Google Maps JS API itself via the
+    // `callback=initFleetMap` query param once the API script has loaded —
+    // see the <script> tag at the bottom of map.blade.php. No manual boot
+    // needed here (and none is possible, since `google` isn't defined yet
+    // at DOMContentLoaded time when the API loads asynchronously).
 })();

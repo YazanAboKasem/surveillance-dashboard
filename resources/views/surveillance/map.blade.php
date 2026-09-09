@@ -4,10 +4,6 @@
 @section('page-title', 'Fleet Map')
 
 @push('styles')
-    {{-- Leaflet CSS --}}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin="" />
     <style>
         /* ── Map Container ───────────────────────────────────── */
         .sv-map-wrapper {
@@ -109,29 +105,36 @@
             100% { transform: scale(1.4); opacity: 0; }
         }
 
-        /* ── Leaflet Popup Override ──────────────────────────── */
-        .leaflet-popup-content-wrapper {
+        /* ── Google Maps InfoWindow Override ─────────────────── */
+        .gm-style .gm-style-iw-c {
             background: rgba(15, 17, 23, 0.95) !important;
             backdrop-filter: blur(12px) !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
             border-radius: 12px !important;
             box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important;
-            color: #e2e8f0 !important;
             padding: 0 !important;
         }
-
-        .leaflet-popup-tip {
+        .gm-style .gm-style-iw-d {
+            overflow: hidden !important;
+            color: #e2e8f0 !important;
+        }
+        .gm-style .gm-style-iw-t::after {
             background: rgba(15, 17, 23, 0.95) !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
+            box-shadow: -2px 2px 2px 0 rgba(0,0,0,0.3) !important;
         }
-
-        .leaflet-popup-content {
-            margin: 0 !important;
-            min-width: 220px !important;
+        .gm-style-iw-tc::after {
+            background: rgba(15, 17, 23, 0.95) !important;
         }
-
+        .gm-ui-hover-effect > span {
+            background-color: #94a3b8 !important;
+        }
+        .gm-style-iw-chr {
+            position: absolute !important;
+            right: 0 !important;
+        }
         .sv-popup-inner {
             padding: 16px;
+            min-width: 220px;
         }
 
         .sv-popup-name {
@@ -369,10 +372,7 @@
 @endsection
 
 @push('scripts')
-    {{-- Leaflet JS --}}
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-
     <script src="{{ asset('js/map.js') }}?v={{ config('surveillance.asset_version', '1') }}"></script>
+    {{-- Google Maps JS API — loaded last, calls window.initFleetMap once ready --}}
+    <script async src="https://maps.googleapis.com/maps/api/js?key={{ config('surveillance.google_maps_api_key') }}&callback=initFleetMap"></script>
 @endpush

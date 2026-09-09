@@ -23,6 +23,16 @@ return [
     'device_ssh_user' => env('DEVICE_SSH_USER', 'radxa'),
 
     /*
+    |--------------------------------------------------------------------------
+    | Google Maps API Key — Fleet Map
+    |--------------------------------------------------------------------------
+    | Used by resources/views/surveillance/map.blade.php to load the Google
+    | Maps JavaScript API. Set GOOGLE_MAPS_API_KEY in .env — never hardcode
+    | the key here so it stays out of git history.
+    */
+    'google_maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
+
+    /*
      * Asset version — bump this to bust browser cache on all devices.
      * Format: MAJOR.MINOR (e.g. 4.0 after any JS/CSS change)
      */
