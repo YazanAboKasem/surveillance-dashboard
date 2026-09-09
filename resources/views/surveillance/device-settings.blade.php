@@ -87,6 +87,9 @@
                     <button class="sv-btn sv-btn-danger" id="reboot-jetson-btn" onclick="rebootJetson()" style="display:inline-flex;align-items:center;gap:8px">
                         <i class="bi bi-power"></i> Restart Jetson
                     </button>
+                    <button class="sv-btn sv-btn-danger" id="restart-service-btn" onclick="restartService()" style="display:inline-flex;align-items:center;gap:8px">
+                        <i class="bi bi-arrow-repeat"></i> Restart Service
+                    </button>
                     <button class="sv-btn sv-btn-accent" id="access-terminal-btn" onclick="requestTerminalSession()" style="display:inline-flex;align-items:center;gap:8px">
                         <i class="bi bi-terminal-fill"></i> Access Terminal
                     </button>

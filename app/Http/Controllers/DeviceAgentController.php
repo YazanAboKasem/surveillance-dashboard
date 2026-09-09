@@ -169,7 +169,9 @@ class DeviceAgentController extends Controller
         }
 
         $host = request()->getHost();
-        $connectionString = "ssh device-agent@{$host} -p {$session->port}";
+        $device = \App\Models\Device::where('device_id', $session->jetson_id)->first();
+        $sshUser = $device->name ?? config('surveillance.device_ssh_user', 'radxa');
+        $connectionString = "ssh {$sshUser}@{$host} -p {$session->port}";
 
         $session->update([
             'status' => 'open',

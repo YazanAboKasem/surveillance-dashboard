@@ -12,6 +12,17 @@ return [
     'api_token' => env('SURVEILLANCE_TOKEN'),
 
     /*
+    |--------------------------------------------------------------------------
+    | Remote Terminal — device OS login username
+    |--------------------------------------------------------------------------
+    | The real system user an operator logs in as once the reverse SSH tunnel
+    | reaches the device (see DeviceAgentController::terminalReady). This is
+    | NOT the restricted `device-agent` account used on this server to accept
+    | the tunnel — it's the actual login user on the Jetson/Rock boards.
+    */
+    'device_ssh_user' => env('DEVICE_SSH_USER', 'radxa'),
+
+    /*
      * Asset version — bump this to bust browser cache on all devices.
      * Format: MAJOR.MINOR (e.g. 4.0 after any JS/CSS change)
      */

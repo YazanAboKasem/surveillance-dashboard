@@ -158,4 +158,14 @@ class JetsonWebSocketService
     {
         $this->sendEvent('jetson.reboot', $deviceId, []);
     }
+
+    /**
+     * Send restart-service command to a specific device — restarts the
+     * software stack (MediaMTX, tunnel, agents) without rebooting the
+     * hardware itself.
+     */
+    public function sendRestartService(string $deviceId): void
+    {
+        $this->sendEvent('jetson.restart_service', $deviceId, []);
+    }
 }

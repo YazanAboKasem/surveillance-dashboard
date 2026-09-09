@@ -64,6 +64,37 @@ class JetsonStatusController extends Controller
         ]);
     }
 
+    /**
+     * POST /api/surveillance/jetson/restart-service
+     * Body: { "device_id": "rock1" }
+     * Restarts the software stack only — no hardware reboot.
+     */
+    public function restartService(Request $request): JsonResponse
+    {
+        if (! $this->isAuthorized($request)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $deviceId = $request->input('device_id');
+        if (empty($deviceId)) {
+            return response()->json(['error' => 'device_id is required'], 422);
+        }
+
+        if (! $this->wsService->isOnline($deviceId)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Device is offline. Cannot send restart-service command.'
+            ], 400);
+        }
+
+        $this->wsService->sendRestartService($deviceId);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Restart-service command sent to {$deviceId}."
+        ]);
+    }
+
     private function isAuthorized(Request $request): bool
     {
         $token = config('surveillance.api_token');

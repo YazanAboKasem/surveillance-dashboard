@@ -27,6 +27,7 @@ Route::get('/surveillance/tunnel-status',      [TunnelController::class, 'status
 // ── Jetson Status & WebSocket ──────────────────────────────────────────────────
 Route::get('/surveillance/jetson/status', [JetsonStatusController::class, 'status']);
 Route::post('/surveillance/jetson/reboot', [JetsonStatusController::class, 'reboot']);
+Route::post('/surveillance/jetson/restart-service', [JetsonStatusController::class, 'restartService']);
 
 // ── Camera PTZ Control ────────────────────────────────────────────────────────
 // Browser sends commands → queued in cache → camera-control.py executes locally

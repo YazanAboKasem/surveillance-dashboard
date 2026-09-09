@@ -129,6 +129,57 @@
     };
 
     /**
+     * Restart Service (software stack only — no hardware reboot) via Laravel WS API
+     */
+    window.restartService = function() {
+        const deviceId = document.getElementById('sv-diagnostic-panel')?.dataset.deviceId;
+        if (!deviceId) {
+            alert('Cannot determine which device to restart.');
+            return;
+        }
+        if (!confirm(`Restart the software stack on ${deviceId} (streams + tunnel + agents)? The device itself will NOT reboot, but live streams and any open terminal session will drop for about a minute.`)) {
+            return;
+        }
+
+        const token = document.querySelector('meta[name="surveillance-token"]')?.content || '';
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const btn = document.getElementById('restart-service-btn');
+
+        if (btn) {
+            btn.setAttribute('disabled', 'true');
+            btn.innerHTML = `<span class="sv-spinner-sm" style="border-top-color:#ff5252"></span> Restarting...`;
+        }
+
+        fetch('/api/surveillance/jetson/restart-service', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-CSRF-TOKEN': csrf
+            },
+            body: JSON.stringify({ device_id: deviceId })
+        })
+        .then(r => {
+            if (!r.ok) return r.json().then(err => { throw new Error(err.error || 'Restart request failed') });
+            return r.json();
+        })
+        .then(data => {
+            alert('Restart Service command sent! Streams and tunnel will be back in about a minute.');
+            if (btn) {
+                btn.innerHTML = `<i class="bi bi-arrow-repeat"></i> Restart Service`;
+            }
+            setTimeout(() => { if (btn) btn.removeAttribute('disabled'); }, 15000);
+        })
+        .catch(err => {
+            alert('Error: ' + err.message);
+            if (btn) {
+                btn.removeAttribute('disabled');
+                btn.innerHTML = `<i class="bi bi-arrow-repeat"></i> Restart Service`;
+            }
+        });
+    };
+
+    /**
      * Toggle Test Mode Panel
      */
     window.toggleTestMode = function () {
