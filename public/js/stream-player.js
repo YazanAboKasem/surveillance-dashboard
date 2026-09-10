@@ -34,7 +34,8 @@
             liveMaxLatencyDurationCount: 6,
             enableWorker:                true,
             manifestLoadingTimeOut:      5000,
-            manifestLoadingMaxRetry:     0,
+            manifestLoadingMaxRetry:     4,
+            manifestLoadingRetryDelay:   1000,
         },
     };
 
